@@ -1,0 +1,29 @@
+# RAG Gate
+
+A planned TypeScript tool that tests a retrieval-augmented generation (RAG) pipeline like software: it evaluates retrieval and answers, versions every run and index, checks that each citation really supports its answer, and fails CI when quality regresses.
+
+> **Status: research stage. No code yet.** This is a portfolio project; demand has not been validated.
+
+## The idea
+
+RAG systems change often (chunk size, embedding model, prompt), and a small change can silently make answers worse. RAG Gate would make that visible:
+
+- run a fixed question set against a versioned index;
+- compare retrieval from keyword search (BM25) and from embeddings, so the AI part has to earn its place;
+- verify that each cited passage supports the answer, and report an abstention when it does not;
+- store runs and compare them with the last good one;
+- exit non-zero in CI when a metric drops.
+
+## Where this stands
+
+Nothing is built. The plan and the evidence so far are in:
+
+- [PRODUCT_RESEARCH.md](PRODUCT_RESEARCH.md): ideas considered, verified facts, competitors, risks, and what is still unverified
+- [VALIDATION_PLAN.md](VALIDATION_PLAN.md): the gates the project must pass before it is built
+- [PLAN.md](PLAN.md): phases, draft success criteria and next actions
+
+Existing tools such as promptfoo and Ragas already cover parts of this space, so any differentiation here is a hypothesis until it is tested.
+
+## Planned stack
+
+TypeScript throughout: Node, a small API and job queue, a vector store, a Next.js dashboard, Vitest and GitHub Actions. Embeddings and answers use the free tier of the Gemini API, so only public or synthetic text is ever indexed.
