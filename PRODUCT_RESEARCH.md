@@ -17,7 +17,7 @@ RAG Gate: a TypeScript tool that evaluates a RAG pipeline, versions every run an
 ## Verified facts (provider pages, fetched 2026-11-02)
 - Gemini API embedding models: `gemini-embedding-001` (text only, max input 2,048 tokens, `task_type` supported) and `gemini-embedding-2` (multimodal, max input 8,192 tokens, no `task_type`; task goes in the prompt text). Output size is flexible from 128 to 3072 dimensions. Source: ai.google.dev/gemini-api/docs/embeddings.
 - Free tier: input for both models is "free of charge" and "used to improve our products: yes". Paid tier: not used. Source: ai.google.dev/gemini-api/docs/pricing.
-- Rate limits: the rate-limit docs page says limits vary by model, apply per project, and that daily quotas reset at midnight Pacific time. It does not list numbers; they are shown only in Google AI Studio. **The free-tier embedding limits are unknown and must be measured.** For reference, the first project measured 20 requests per day for `gemini-2.5-flash`, and retries count.
+- Rate limits: the rate-limit docs page says limits vary by model, apply per project, and that daily quotas reset at midnight Pacific time. It does not list numbers; they are shown only in Google AI Studio. Measured on 2026-11-03 (see `docs/GATE0_RESULTS.md`): **100 embed requests per minute** on the free tier, and items in a batch appear to count individually. The daily limit is still unknown.
 
 ## Competitors and alternatives (partly verified)
 | Tool | What I confirmed | Not confirmed |
@@ -36,7 +36,7 @@ No pricing for any competitor has been checked. Differentiation is therefore a h
 - Without user interviews, demand is not validated.
 
 ## Open research tasks
-- [ ] Measure free-tier embedding limits (requests per minute and per day, batch size).
+- [x] Measure free-tier embedding limits per minute (100 requests). Daily limit still open.
 - [ ] Pick a corpus with a licence that allows this use, or generate a synthetic one with known facts. Record the licence.
 - [ ] Read promptfoo's RAG documentation and list what it already does.
 - [ ] Check TruLens, DeepEval and Phoenix feature pages.

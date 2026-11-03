@@ -1,0 +1,21 @@
+{
+  "name": "rag-gate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Quality gate for RAG pipelines: evaluate retrieval and answers, version runs, fail CI on regressions.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "probe": "tsx src/gate0/probe.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

@@ -30,3 +30,4 @@ After Gates 0 and 1. A CLI that indexes a corpus, runs an eval set, stores the r
 |---|---|---|
 | 2026-11-02 | Research | Started. Embedding model names and free-tier terms verified; limits unknown. |
 | 2026-11-02 | Gate 2 | Waived by the owner (portfolio project). Demand not validated. |
+| 2026-11-03 | Gate 0 | Partly met. Both embedding models work; free tier allows 100 embed requests per minute, and batch items appear to count individually. Daily limit unknown; corpus not chosen. See `docs/GATE0_RESULTS.md`. |
