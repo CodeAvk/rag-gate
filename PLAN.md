@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-03: Gate 0 partly met (per-minute embedding limit measured; daily limit and corpus pending). First code: Gemini embeddings client and the Gate 0 probe, with tests. See `docs/GATE0_RESULTS.md`.
+Status as of 2026-11-04: Gate 0 nearly met: per-minute embedding limit measured and synthetic corpus built (`docs/CORPUS.md`); daily limit still unmeasured. Next: Gate 1 (BM25 baseline, then embeddings).
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -22,9 +22,10 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 ## Next actions
 - [x] Measure the free-tier embedding limits with a small script (2026-11-03: 100 requests per minute).
 - [ ] Confirm whether batch items count individually; measure the daily limit only if the design needs it.
-- [ ] Choose the corpus and record its licence, or write the synthetic generator.
+- [x] Synthetic corpus generator with exact ground truth (2026-11-04).
+- [ ] BM25 baseline and retrieval metrics (recall@5, MRR) on the dev set.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
 ## Work not done
-No retrieval or evaluation code yet, no corpus, no daily-limit measurement, no interviews (waived), no competitor pricing.
+No retrieval or evaluation code yet, no daily-limit measurement, no interviews (waived), no competitor pricing.

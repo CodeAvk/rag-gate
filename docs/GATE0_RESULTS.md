@@ -27,11 +27,11 @@ Measured 2026-11-03 with `npm run probe` (`src/gate0/probe.ts`). The probe sends
 |---|---|
 | Embedding endpoint works with the free key | Done |
 | Free-tier limits measured | Partly: per-minute limit measured; daily limit and the `gemini-embedding-2` limit not yet |
-| Licence-safe or synthetic corpus chosen | Not started |
+| Licence-safe or synthetic corpus chosen | Done (2026-11-04): synthetic-v1, generated in this repo, see `docs/CORPUS.md` |
 | Only public or synthetic text sent | Holding (probe used synthetic sentences only) |
 
 **Gate 0 is not passed yet.**
 
 ## Next
 1. Confirm batch counting with a batch of 10, and measure the daily limit only if a design decision depends on it.
-2. Choose the corpus and record its licence, or write a synthetic generator with known facts.
+2. ~~Choose the corpus~~ Done: synthetic generator with known facts (`docs/CORPUS.md`).

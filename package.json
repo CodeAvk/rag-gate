@@ -10,7 +10,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "probe": "tsx src/gate0/probe.ts"
+    "probe": "tsx src/gate0/probe.ts",
+    "corpus": "tsx src/corpus/synthetic.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

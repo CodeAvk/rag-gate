@@ -37,7 +37,7 @@ No pricing for any competitor has been checked. Differentiation is therefore a h
 
 ## Open research tasks
 - [x] Measure free-tier embedding limits per minute (100 requests). Daily limit still open.
-- [ ] Pick a corpus with a licence that allows this use, or generate a synthetic one with known facts. Record the licence.
+- [x] Corpus: synthetic, generated in this repo (no third-party licence). See `docs/CORPUS.md`.
 - [ ] Read promptfoo's RAG documentation and list what it already does.
 - [ ] Check TruLens, DeepEval and Phoenix feature pages.
 - [ ] Decide the answer-support check (deterministic span/overlap check versus a Gemini judge) and how to test the check itself.
