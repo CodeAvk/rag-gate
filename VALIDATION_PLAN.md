@@ -33,3 +33,4 @@ After Gates 0 and 1. A CLI that indexes a corpus, runs an eval set, stores the r
 | 2026-11-03 | Gate 0 | Partly met. Both embedding models work; free tier allows 100 embed requests per minute, and batch items appear to count individually. Daily limit unknown; corpus not chosen. See `docs/GATE0_RESULTS.md`. |
 | 2026-11-04 | Gate 0 | Corpus done: synthetic-v1 (96 passages, 168 questions, 84 held out), generated in this repo, so no licence issue. Remaining: daily embedding limit (only if the design needs it). See `docs/CORPUS.md`. |
 | 2026-11-05 | Gate 1 | BM25 baseline on dev: literal R@5 1.000, paraphrase R@5 0.643 (MRR 0.415). Held-out untouched. See `docs/GATE1_RESULTS.md`. |
+| 2026-11-05 | Gate 1 | Gemini embeddings on dev: 1.000 on every metric (paraphrase R@5 +35.7 points over BM25). Scores at the ceiling, so the set is too easy; a harder set is needed before the held-out run. |

@@ -2,7 +2,7 @@
 
 A planned TypeScript tool that tests a retrieval-augmented generation (RAG) pipeline like software: it evaluates retrieval and answers, versions every run and index, checks that each citation really supports its answer, and fails CI when quality regresses.
 
-> **Status: early stage.** Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus and the BM25 baseline with an evaluation runner. No AI retrieval yet. This is a portfolio project; demand has not been validated.
+> **Status: early stage.** Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, and an evaluation runner. This is a portfolio project; demand has not been validated.
 
 ## The idea
 
@@ -22,6 +22,7 @@ Built so far (TypeScript, Node 22):
 - `src/gate0/probe.ts`: measures what the free tier allows, using synthetic text and a hard cap on calls. First result: 100 embedding requests per minute ([docs/GATE0_RESULTS.md](docs/GATE0_RESULTS.md)).
 - `src/corpus/synthetic.ts`: a seeded generator for a synthetic test corpus with exact answers, literal and paraphrased questions, and a held-out split ([docs/CORPUS.md](docs/CORPUS.md)).
 - `src/retrieval/bm25.ts` and `src/eval/`: the BM25 keyword baseline and an evaluation runner (Recall@1, Recall@5, MRR, per question style). BM25 solves literal questions perfectly but reaches only 0.643 Recall@5 on paraphrases ([docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md)).
+- `src/retrieval/embedding.ts`: Gemini embedding retrieval with an on-disk vector cache (each text is embedded once), a rate limiter under the free-tier limit, and retry after a 429. On the dev set it scores 1.000 Recall@5 on paraphrases, which also shows the test set is too easy and needs a harder version.
 
 ```
 npm install
@@ -29,6 +30,7 @@ npm test            # unit tests, no network
 npm run typecheck
 npm run corpus      # writes the synthetic corpus to data/corpus/
 npm run eval        # scores BM25 on the dev split
+npm run eval -- --retriever gemini   # embeddings; first run sends about 180 items to the free API
 npm run probe       # needs GEMINI_API_KEY in .env; makes up to 60 calls
 ```
 
