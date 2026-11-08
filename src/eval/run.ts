@@ -1,7 +1,7 @@
 /**
  * Score a retriever on the synthetic question set.
  *
- * Usage: npm run eval -- [--retriever bm25|gemini] [--corpus v1|v2] [--seed 1] [--split dev]
+ * Usage: npm run eval -- [--retriever bm25|gemini|hybrid] [--corpus v1|v2] [--seed 1] [--split dev]
  * The held-out split is for the single final Gate 1 comparison, so it needs
  * `--split heldout --final` and is never the default.
  */
@@ -10,6 +10,7 @@ import { generate, TEMPLATE_SETS, type Dataset } from "../corpus/synthetic.js";
 import { loadApiKey } from "../env.js";
 import { Bm25, type Retriever } from "../retrieval/bm25.js";
 import { geminiRetriever } from "../retrieval/embedding.js";
+import { HybridRetriever } from "../retrieval/hybrid.js";
 import { rankOf, summarizeByStyle, type QuestionResult, type Summary } from "./metrics.js";
 
 export const TOP_K = 10;
@@ -25,12 +26,12 @@ export async function evaluate(retriever: Retriever, data: Dataset, split: "dev"
 
 export async function makeRetriever(name: string, data: Dataset, split: "dev" | "heldout"): Promise<Retriever> {
   if (name === "bm25") return new Bm25(data.passages);
-  if (name === "gemini") {
-    const retriever = geminiRetriever(data.passages, loadApiKey());
-    const sent = (await retriever.build()) +
-      (await retriever.prepareQueries(data.questions.filter((q) => q.split === split).map((q) => q.text)));
+  if (name === "gemini" || name === "hybrid") {
+    const embedding = geminiRetriever(data.passages, loadApiKey());
+    const sent = (await embedding.build()) +
+      (await embedding.prepareQueries(data.questions.filter((q) => q.split === split).map((q) => q.text)));
     console.log(`embedding API items sent this run: ${sent} (cached texts are free)`);
-    return retriever;
+    return name === "gemini" ? embedding : new HybridRetriever([new Bm25(data.passages), embedding]);
   }
   throw new Error(`unknown retriever: ${name}`);
 }

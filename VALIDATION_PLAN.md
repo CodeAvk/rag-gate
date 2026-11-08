@@ -35,3 +35,4 @@ After Gates 0 and 1. A CLI that indexes a corpus, runs an eval set, stores the r
 | 2026-11-05 | Gate 1 | BM25 baseline on dev: literal R@5 1.000, paraphrase R@5 0.643 (MRR 0.415). Held-out untouched. See `docs/GATE1_RESULTS.md`. |
 | 2026-11-05 | Gate 1 | Gemini embeddings on dev: 1.000 on every metric (paraphrase R@5 +35.7 points over BM25). Scores at the ceiling, so the set is too easy; a harder set is needed before the held-out run. |
 | 2026-11-08 | Gate 1 | Harder set synthetic-v2 on dev: BM25 paraphrase R@5 0.440; Gemini 1.000 (R@1 0.964, MRR 0.982). Gemini's 3 rank-1 misses were look-alike products and one topic trap. |
+| 2026-11-08 | Gate 1 | Equal-weight hybrid (RRF) is worse than embeddings alone on paraphrases (v2 R@1 0.583 vs 0.964, R@5 0.952 vs 1.000). Embeddings alone go to the held-out run. |

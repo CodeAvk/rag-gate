@@ -26,9 +26,10 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] BM25 baseline and retrieval metrics on the dev set (2026-11-05: paraphrase R@5 0.643, literal 1.000).
 - [x] Embedding retriever with a cached index, on the dev set (2026-11-05: 1.000 on every metric; set too easy).
 - [x] Harder second template set (2026-11-08, synthetic-v2): Gemini paraphrase R@1 0.964, R@5 1.000; BM25 R@5 0.440.
-- [ ] Hybrid retriever (BM25 plus embeddings), then the single held-out run.
+- [x] Hybrid retriever by reciprocal rank fusion (2026-11-08): worse than embeddings alone on paraphrases (v2 R@1 0.583 vs 0.964); kept as an option, not the default.
+- [ ] Single held-out run: BM25 versus Gemini embeddings on v1 and v2.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
 ## Work not done
-No hybrid retriever yet, no held-out run, no daily-limit measurement, no interviews (waived), no competitor pricing.
+No held-out run yet, no daily-limit measurement, no interviews (waived), no competitor pricing.

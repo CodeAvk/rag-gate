@@ -1,6 +1,6 @@
 # Gate 1 results: does AI retrieval beat keyword search?
 
-Status: **in progress.** BM25 and Gemini embeddings have been measured on the **dev** splits of v1 and v2 only. The held-out split has not been touched; it is used once, for the final comparison.
+Status: **in progress.** BM25, Gemini embeddings and a hybrid of the two have been measured on the **dev** splits of v1 and v2 only. The held-out split has not been touched; it is used once, for the final comparison.
 
 ## BM25 baseline on the dev split (2026-11-05)
 
@@ -61,6 +61,29 @@ What changed compared with v1:
 - Gemini is no longer perfect at rank 1. Its 3 misses, all with the right passage second: two look-alike products (`tamber-4-pro` weight ranked below `tamber-4`, `tamber-5-lite` range below `tamber-5`) and one topic trap (a battery question matched the warranty passage that mentions battery wear).
 - Recall@5 is still 1.000 for Gemini, so v2 is still at the ceiling on that metric. Recall@1 and MRR now have room to move, so a regression gate should watch them, not only Recall@5.
 
+## Hybrid (BM25 + embeddings) on the dev splits (2026-11-08)
+
+Reciprocal rank fusion (k = 60) of the BM25 and Gemini rankings, top 50 from each, equal weight (`src/retrieval/hybrid.ts`). Reproduce with `npm run eval -- --retriever hybrid --corpus v1` (or `v2`). It reused the cached vectors, so it sent 0 items to the API.
+
+Paraphrased questions:
+
+| Set | Retriever | Recall@1 | Recall@5 | MRR |
+|---|---|---|---|---|
+| v1 | BM25 | 0.238 | 0.643 | 0.415 |
+| v1 | Gemini | 1.000 | 1.000 | 1.000 |
+| v1 | Hybrid | 0.786 | 1.000 | 0.893 |
+| v2 | BM25 | 0.143 | 0.440 | 0.281 |
+| v2 | Gemini | 0.964 | 1.000 | 0.982 |
+| v2 | Hybrid | 0.583 | 0.952 | 0.736 |
+
+Literal questions stay at 1.000 for all three.
+
+**Finding: equal-weight hybrid is worse than embeddings alone here.** On v2 it put the right passage lower than Gemini did for 35 paraphrases and higher for 2. On paraphrases BM25 is confidently wrong (it ranks the other facts of the right product first), and RRF gives that wrong ranking the same vote as the embedding ranking.
+
+This is a property of this test set, where literal questions are already solved by both methods and paraphrases are BM25's worst case. On real text, where exact terms such as model numbers or error codes matter, hybrid often helps; that is not tested here.
+
+**Decision:** embeddings alone are the AI retriever taken to the held-out run. Hybrid stays available (`--retriever hybrid`) but is not the default. A weighted fusion that trusts BM25 less is a possible later experiment, decided before looking at held-out.
+
 ## The bar for AI retrieval
 
 The rule in `VALIDATION_PLAN.md`, fixed before any embedding results: AI retrieval must beat BM25 by **at least 10 points of Recall@5 on paraphrased questions** on the held-out split, and be no worse on literal ones. On dev that would mean paraphrase Recall@5 of 0.743 or more and literal Recall@5 of 1.000. The binding comparison is on held-out.
@@ -75,5 +98,5 @@ The rule in `VALIDATION_PLAN.md`, fixed before any embedding results: AI retriev
 
 1. ~~Embedding retriever on dev~~ Done (2026-11-05).
 2. ~~A harder second template set~~ Done (2026-11-08): Recall@1 and MRR now have headroom; Recall@5 does not.
-3. Hybrid (BM25 plus embeddings).
-4. One final run on held-out.
+3. ~~Hybrid (BM25 plus embeddings)~~ Done (2026-11-08): worse than embeddings alone on this data; not the default.
+4. One final run on held-out: BM25 versus Gemini embeddings, on v1 and v2.
