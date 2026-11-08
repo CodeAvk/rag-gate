@@ -7,10 +7,15 @@
  * - paraphrase: avoids the passage's wording (this is where embeddings have to earn their place).
  * Near-identical product names (family "4" and "5") make retrieval pick the right entity.
  *
+ * Two template sets: v1 (one fixed wording per fact, 12 products) and v2 (harder, see synthetic-v2.ts).
  * All text is generated here. No third-party text, so there is no licence question.
- * Usage: npm run corpus [seed]   -> data/corpus/synthetic-v1-seed<seed>/{corpus,questions}.json
+ * Usage: npm run corpus [seed] [v1|v2]   -> data/corpus/synthetic-<v>-seed<seed>/{corpus,questions}.json
  */
 import { mkdirSync, writeFileSync } from "node:fs";
+import { int, rng, type Rng } from "./random.js";
+import { V2 } from "./synthetic-v2.js";
+
+export { rng } from "./random.js";
 
 export interface Passage {
   id: string;
@@ -35,29 +40,27 @@ export interface Dataset {
   questions: Question[];
 }
 
-interface Fact {
+/**
+ * One fact type. `variants` > 1 means each product draws one of several wordings; the
+ * template functions receive the drawn index, and a literal question uses its passage's index. v1 facts have a single wording and draw nothing,
+ * so v1 output is unchanged by this option.
+ */
+export interface Fact {
   key: string;
   value: (r: Rng) => string;
-  passage: (name: string, v: string) => string;
-  literal: (name: string) => string;
-  paraphrase: (name: string) => string;
+  passage: (name: string, v: string, variant: number) => string;
+  literal: (name: string, variant: number) => string;
+  paraphrase: (name: string, variant: number) => string;
+  variants?: number;
 }
 
-type Rng = () => number;
-
-/** mulberry32: small seeded PRNG so every run of the generator is identical. */
-export function rng(seed: number): Rng {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+export interface TemplateSet {
+  version: string;
+  families: string[];
+  models: string[];
+  facts: Fact[];
+  distractor: (name: string) => string;
 }
-
-const int = (r: Rng, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
 
 export const FACTS: Fact[] = [
   {
@@ -114,28 +117,39 @@ export const FACTS: Fact[] = [
 export const FAMILIES = ["Kestrel", "Marlow", "Quillon", "Tamber", "Orrin", "Vesper"];
 export const MODELS = ["4", "5"];
 
-const distractor = (n: string) =>
-  `Register the ${n} online to keep warranty, battery, charge and return records together; ` +
-  `the wireless setup guide and accessories list are on the same page.`;
+export const V1: TemplateSet = {
+  version: "synthetic-v1",
+  families: FAMILIES,
+  models: MODELS,
+  facts: FACTS,
+  distractor: (n) =>
+    `Register the ${n} online to keep warranty, battery, charge and return records together; ` +
+    `the wireless setup guide and accessories list are on the same page.`,
+};
 
-export function generate(seed = 1, heldoutShare = 0.5): Dataset {
+export const TEMPLATE_SETS: Record<string, TemplateSet> = { v1: V1, v2: V2 };
+
+export function generate(seed = 1, heldoutShare = 0.5, set: TemplateSet = V1): Dataset {
   const r = rng(seed);
+  const pick = (fact: Fact) => (fact.variants && fact.variants > 1 ? int(r, 0, fact.variants - 1) : 0);
   const passages: Passage[] = [];
   const questions: Question[] = [];
-  for (const family of FAMILIES) {
-    for (const model of MODELS) {
+  for (const family of set.families) {
+    for (const model of set.models) {
       const name = `${family} ${model}`;
-      const docId = `${family}-${model}`.toLowerCase();
-      for (const fact of FACTS) {
+      const docId = `${family}-${model}`.toLowerCase().replace(/\s+/g, "-");
+      for (const fact of set.facts) {
         const value = fact.value(r);
         const pid = `${docId}#${fact.key}`;
-        passages.push({ id: pid, docId, text: fact.passage(name, value), kind: "fact" });
+        const wording = pick(fact);
+        passages.push({ id: pid, docId, text: fact.passage(name, value, wording), kind: "fact" });
         for (const style of ["literal", "paraphrase"] as const) {
-          const text = style === "literal" ? fact.literal(name) : fact.paraphrase(name);
+          // Literal questions reuse their passage's wording; paraphrases draw their own.
+          const text = style === "literal" ? fact.literal(name, wording) : fact.paraphrase(name, pick(fact));
           questions.push({ id: `${pid}:${style}`, text, style, goldPassageId: pid, answer: value, split: "dev" });
         }
       }
-      passages.push({ id: `${docId}#register`, docId, text: distractor(name), kind: "distractor" });
+      passages.push({ id: `${docId}#register`, docId, text: set.distractor(name), kind: "distractor" });
     }
   }
   // Seeded split, balanced within each style so dev and held-out have the same mix.
@@ -145,12 +159,14 @@ export function generate(seed = 1, heldoutShare = 0.5): Dataset {
     const cut = Math.round(order.length * (1 - heldoutShare));
     order.forEach(({ q }, i) => { q.split = i < cut ? "dev" : "heldout"; });
   }
-  return { version: "synthetic-v1", seed, passages, questions };
+  return { version: set.version, seed, passages, questions };
 }
 
 function main() {
   const seed = Number(process.argv[2] ?? 1);
-  const data = generate(seed);
+  const set = TEMPLATE_SETS[process.argv[3] ?? "v1"];
+  if (!set) throw new Error(`unknown template set: ${process.argv[3]}`);
+  const data = generate(seed, 0.5, set);
   const dir = `data/corpus/${data.version}-seed${seed}`;
   mkdirSync(dir, { recursive: true });
   writeFileSync(`${dir}/corpus.json`, JSON.stringify(data.passages, null, 2));

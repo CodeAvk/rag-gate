@@ -1,6 +1,6 @@
 # Gate 1 results: does AI retrieval beat keyword search?
 
-Status: **in progress.** BM25 and Gemini embeddings have been measured on the **dev** split only. The held-out split has not been touched; it is used once, for the final comparison.
+Status: **in progress.** BM25 and Gemini embeddings have been measured on the **dev** splits of v1 and v2 only. The held-out split has not been touched; it is used once, for the final comparison.
 
 ## BM25 baseline on the dev split (2026-11-05)
 
@@ -44,6 +44,23 @@ A perfect score can hide a bug, so the similarity scores were inspected:
 - The set is **too easy for embeddings**: they hit the ceiling, so it cannot tell a good embedding setup from a slightly worse one. That matters for this product, because a regression gate needs a test where scores have room to drop. A harder set is needed: a second, differently worded template set, more look-alike products and longer passages.
 - The narrow margins show the real difficulty is telling near-identical product names apart, not the paraphrase.
 
+## synthetic-v2 on the dev split (2026-11-08)
+
+The harder set (see `docs/CORPUS.md`): 192 passages, 168 dev questions. Reproduce with `npm run eval -- --corpus v2` and `npm run eval -- --retriever gemini --corpus v2`. The Gemini run sent 372 items (360 texts plus one batch of 12 retried after a 429).
+
+| Retriever | Questions | Recall@1 | Recall@5 | MRR |
+|---|---|---|---|---|
+| BM25 | Literal (84) | 1.000 | 1.000 | 1.000 |
+| BM25 | Paraphrase (84) | 0.143 | 0.440 | 0.281 |
+| Gemini embeddings | Literal (84) | 1.000 | 1.000 | 1.000 |
+| Gemini embeddings | Paraphrase (84) | 0.964 | 1.000 | 0.982 |
+
+What changed compared with v1:
+
+- BM25 got much worse on paraphrases (Recall@5 0.643 to 0.440). It now also lands on the wrong product: in 9 of its 47 paraphrase misses the top hit was a look-alike product, because of the "Pro" and "Lite" models.
+- Gemini is no longer perfect at rank 1. Its 3 misses, all with the right passage second: two look-alike products (`tamber-4-pro` weight ranked below `tamber-4`, `tamber-5-lite` range below `tamber-5`) and one topic trap (a battery question matched the warranty passage that mentions battery wear).
+- Recall@5 is still 1.000 for Gemini, so v2 is still at the ceiling on that metric. Recall@1 and MRR now have room to move, so a regression gate should watch them, not only Recall@5.
+
 ## The bar for AI retrieval
 
 The rule in `VALIDATION_PLAN.md`, fixed before any embedding results: AI retrieval must beat BM25 by **at least 10 points of Recall@5 on paraphrased questions** on the held-out split, and be no worse on literal ones. On dev that would mean paraphrase Recall@5 of 0.743 or more and literal Recall@5 of 1.000. The binding comparison is on held-out.
@@ -57,6 +74,6 @@ The rule in `VALIDATION_PLAN.md`, fixed before any embedding results: AI retriev
 ## Next
 
 1. ~~Embedding retriever on dev~~ Done (2026-11-05).
-2. A harder second template set, so scores are not at the ceiling.
+2. ~~A harder second template set~~ Done (2026-11-08): Recall@1 and MRR now have headroom; Recall@5 does not.
 3. Hybrid (BM25 plus embeddings).
 4. One final run on held-out.

@@ -57,7 +57,9 @@ describe("metrics", () => {
 
 describe("eval run", () => {
   it("uses the dev split by default and guards the held-out split", () => {
-    expect(parseArgs([])).toEqual({ retriever: "bm25", seed: 1, split: "dev" });
+    expect(parseArgs([])).toEqual({ retriever: "bm25", corpus: "v1", seed: 1, split: "dev" });
+    expect(parseArgs(["--corpus", "v2"]).corpus).toBe("v2");
+    expect(() => parseArgs(["--corpus", "v9"])).toThrow(/unknown corpus/);
     expect(() => parseArgs(["--split", "heldout"])).toThrow(/--final/);
     expect(parseArgs(["--split", "heldout", "--final"]).split).toBe("heldout");
     expect(() => parseArgs(["--split", "test"])).toThrow(/unknown split/);

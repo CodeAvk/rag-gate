@@ -1,12 +1,12 @@
 /**
  * Score a retriever on the synthetic question set.
  *
- * Usage: npm run eval -- [--retriever bm25|gemini] [--seed 1] [--split dev]
+ * Usage: npm run eval -- [--retriever bm25|gemini] [--corpus v1|v2] [--seed 1] [--split dev]
  * The held-out split is for the single final Gate 1 comparison, so it needs
  * `--split heldout --final` and is never the default.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
-import { generate, type Dataset } from "../corpus/synthetic.js";
+import { generate, TEMPLATE_SETS, type Dataset } from "../corpus/synthetic.js";
 import { loadApiKey } from "../env.js";
 import { Bm25, type Retriever } from "../retrieval/bm25.js";
 import { geminiRetriever } from "../retrieval/embedding.js";
@@ -47,7 +47,9 @@ export function parseArgs(argv: string[]) {
   if (split === "heldout" && !argv.includes("--final")) {
     throw new Error("the held-out split is used once, for the final comparison: add --final to confirm");
   }
-  return { retriever: arg(argv, "--retriever", "bm25")!, seed: Number(arg(argv, "--seed", "1")), split };
+  const corpus = arg(argv, "--corpus", "v1")!;
+  if (!TEMPLATE_SETS[corpus]) throw new Error(`unknown corpus: ${corpus}`);
+  return { retriever: arg(argv, "--retriever", "bm25")!, corpus, seed: Number(arg(argv, "--seed", "1")), split };
 }
 
 function table(summary: Record<string, Summary>) {
@@ -59,7 +61,7 @@ function table(summary: Record<string, Summary>) {
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const data = generate(opts.seed);
+  const data = generate(opts.seed, 0.5, TEMPLATE_SETS[opts.corpus]);
   const { summary, results } = await evaluate(await makeRetriever(opts.retriever, data, opts.split), data, opts.split);
   const name = `${opts.retriever}_${data.version}-seed${opts.seed}_${opts.split}`;
   mkdirSync("data/eval", { recursive: true });

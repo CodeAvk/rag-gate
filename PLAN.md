@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-04: Gate 0 nearly met: per-minute embedding limit measured and synthetic corpus built (`docs/CORPUS.md`); daily limit still unmeasured. Gate 1 on dev: embeddings beat BM25 on paraphrases (R@5 1.000 vs 0.643) but hit the ceiling, so a harder set comes before the held-out run (`docs/GATE1_RESULTS.md`).
+Status as of 2026-11-04: Gate 0 nearly met: per-minute embedding limit measured and synthetic corpus built (`docs/CORPUS.md`); daily limit still unmeasured. Gate 1 on dev: embeddings beat BM25 on paraphrases on both sets (v2: R@5 1.000 vs 0.440). v2 gives Recall@1 and MRR headroom; Recall@5 is still at the ceiling. Held-out run still pending (`docs/GATE1_RESULTS.md`).
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -25,9 +25,10 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] Synthetic corpus generator with exact ground truth (2026-11-04).
 - [x] BM25 baseline and retrieval metrics on the dev set (2026-11-05: paraphrase R@5 0.643, literal 1.000).
 - [x] Embedding retriever with a cached index, on the dev set (2026-11-05: 1.000 on every metric; set too easy).
-- [ ] Harder second template set so scores leave room for regressions.
+- [x] Harder second template set (2026-11-08, synthetic-v2): Gemini paraphrase R@1 0.964, R@5 1.000; BM25 R@5 0.440.
+- [ ] Hybrid retriever (BM25 plus embeddings), then the single held-out run.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
 ## Work not done
-No harder test set yet, no held-out run, no daily-limit measurement, no interviews (waived), no competitor pricing.
+No hybrid retriever yet, no held-out run, no daily-limit measurement, no interviews (waived), no competitor pricing.
