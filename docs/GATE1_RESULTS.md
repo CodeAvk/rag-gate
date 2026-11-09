@@ -1,6 +1,30 @@
 # Gate 1 results: does AI retrieval beat keyword search?
 
-Status: **in progress.** BM25, Gemini embeddings and a hybrid of the two have been measured on the **dev** splits of v1 and v2 only. The held-out split has not been touched; it is used once, for the final comparison.
+Status: **Gate 1 passed on 2026-11-09** (held-out run below). Everything after the verdict is the dev-split work that led to it.
+
+## Verdict: held-out run (2026-11-09)
+
+The held-out questions were scored once, after all design choices were fixed on dev: BM25 against Gemini embeddings (`gemini-embedding-001`, 768 dimensions), on both test sets. Reproduce with `npm run eval -- --retriever <bm25|gemini> --corpus <v1|v2> --split heldout --final`.
+
+| Set | Questions | BM25 R@1 | BM25 R@5 | Gemini R@1 | Gemini R@5 | Gemini MRR |
+|---|---|---|---|---|---|---|
+| v1 | Literal (42) | 0.976 | 1.000 | 1.000 | 1.000 | 1.000 |
+| v1 | Paraphrase (42) | 0.310 | 0.810 | 1.000 | 1.000 | 1.000 |
+| v2 | Literal (84) | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| v2 | Paraphrase (84) | 0.119 | 0.476 | 0.905 | 1.000 | 0.952 |
+
+Against the rule fixed before any embedding result (at least +10 points of paraphrase Recall@5, no worse on literal):
+
+| Set | Paraphrase R@5 margin | Literal R@5 | Result |
+|---|---|---|---|
+| v1 | +19.0 points (1.000 vs 0.810) | 1.000 vs 1.000 | Pass |
+| v2 | +52.4 points (1.000 vs 0.476) | 1.000 vs 1.000 | Pass |
+
+**Gate 1 passes on both sets.**
+
+Where Gemini still fails: its 8 rank-1 misses on v2 held-out are all the right fact about a **look-alike product** ("Kestrel 4" ranked above "Kestrel 4 Pro", "Vesper 5" below "Vesper 5 Lite"), always with the right passage second. Embeddings blur model names that differ by one word. Any product built on this must check the entity name, not only the meaning.
+
+What the pass does not show: the test sets are synthetic and written by me, BM25 is untuned, and the held-out sets are small (42 and 84 paraphrases). It shows that, on paraphrased questions, the AI step adds a large, measurable gain over keyword search; it does not estimate accuracy on real documents. The v2 Gemini run sent 198 items for 168 new questions (one batch of 30 retried after a 429).
 
 ## BM25 baseline on the dev split (2026-11-05)
 
@@ -99,4 +123,4 @@ The rule in `VALIDATION_PLAN.md`, fixed before any embedding results: AI retriev
 1. ~~Embedding retriever on dev~~ Done (2026-11-05).
 2. ~~A harder second template set~~ Done (2026-11-08): Recall@1 and MRR now have headroom; Recall@5 does not.
 3. ~~Hybrid (BM25 plus embeddings)~~ Done (2026-11-08): worse than embeddings alone on this data; not the default.
-4. One final run on held-out: BM25 versus Gemini embeddings, on v1 and v2.
+4. ~~One final run on held-out~~ Done (2026-11-09): Gate 1 passed.

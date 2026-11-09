@@ -2,7 +2,7 @@
 
 A planned TypeScript tool that tests a retrieval-augmented generation (RAG) pipeline like software: it evaluates retrieval and answers, versions every run and index, checks that each citation really supports its answer, and fails CI when quality regresses.
 
-> **Status: early stage.** Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, a hybrid of the two, and an evaluation runner. This is a portfolio project; demand has not been validated.
+> **Status: early stage. Gate 1 passed:** on held-out synthetic questions, Gemini embeddings beat BM25 by +19 and +52 points of paraphrase Recall@5. Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, a hybrid of the two, and an evaluation runner. This is a portfolio project; demand has not been validated.
 
 ## The idea
 
