@@ -57,12 +57,22 @@ describe("metrics", () => {
 
 describe("eval run", () => {
   it("uses the dev split by default and guards the held-out split", () => {
-    expect(parseArgs([])).toEqual({ retriever: "bm25", corpus: "v1", seed: 1, split: "dev" });
+    expect(parseArgs([])).toEqual({
+      retriever: "bm25", corpus: "v1", seed: 1, split: "dev", gate: false, saveBaseline: false, tolerance: 0,
+    });
     expect(parseArgs(["--corpus", "v2"]).corpus).toBe("v2");
     expect(() => parseArgs(["--corpus", "v9"])).toThrow(/unknown corpus/);
     expect(() => parseArgs(["--split", "heldout"])).toThrow(/--final/);
     expect(parseArgs(["--split", "heldout", "--final"]).split).toBe("heldout");
     expect(() => parseArgs(["--split", "test"])).toThrow(/unknown split/);
+  });
+
+  it("parses the gate flags", () => {
+    expect(parseArgs(["--gate", "--tolerance", "0.02"])).toMatchObject({ gate: true, tolerance: 0.02 });
+    expect(parseArgs(["--save-baseline"]).saveBaseline).toBe(true);
+    expect(() => parseArgs(["--gate", "--save-baseline"])).toThrow(/not both/);
+    expect(() => parseArgs(["--tolerance", "-1"])).toThrow(/tolerance/);
+    expect(() => parseArgs(["--tolerance", "abc"])).toThrow(/tolerance/);
   });
 
   it("scores only the requested split", async () => {

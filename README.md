@@ -24,6 +24,7 @@ Built so far (TypeScript, Node 22):
 - `src/retrieval/bm25.ts` and `src/eval/`: the BM25 keyword baseline and an evaluation runner (Recall@1, Recall@5, MRR, per question style). BM25 solves literal questions perfectly but reaches only 0.643 Recall@5 on paraphrases ([docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md)).
 - `src/retrieval/hybrid.ts`: hybrid retrieval by reciprocal rank fusion of BM25 and embeddings. On these test sets it is worse than embeddings alone, because BM25 is confidently wrong on paraphrases, so it is not the default ([docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md)).
 - `src/retrieval/embedding.ts`: Gemini embedding retrieval with an on-disk vector cache (each text is embedded once), a rate limiter under the free-tier limit, and retry after a 429. On the dev set it scores 1.000 Recall@5 on paraphrases, which also shows the test set is too easy and needs a harder version.
+- `src/gate/runs.ts`: the run store and regression check. Every eval run is appended to a local history with its config, the git commit, a fingerprint of the exact dataset and its metrics. A run can be saved as the baseline for its config (`baselines/`, committed); `--gate` compares a new run with it and exits 1 if any metric (Recall@1, Recall@5, MRR, overall or per style) drops by more than the tolerance. Runs on a changed dataset are refused rather than compared.
 
 ```
 npm install
@@ -34,6 +35,9 @@ npm run eval        # scores BM25 on the dev split
 npm run eval -- --retriever gemini   # embeddings; first run sends about 180 items to the free API
 npm run eval -- --retriever gemini --corpus v2   # harder set; first run sends about 360 items
 npm run eval -- --retriever hybrid --corpus v2   # BM25 + embeddings fused; reuses cached vectors
+npm run eval -- --corpus v2 --save-baseline     # make this run the baseline for its config
+npm run eval -- --corpus v2 --gate              # compare with the baseline; exit 1 on any drop
+npm run eval -- --corpus v2 --gate --tolerance 0.02   # allow drops of up to 0.02
 npm run probe       # needs GEMINI_API_KEY in .env; makes up to 60 calls
 ```
 

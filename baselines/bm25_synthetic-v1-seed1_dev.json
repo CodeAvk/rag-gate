@@ -1,0 +1,34 @@
+{
+  "id": "20261110T063238439Z_bm25_synthetic-v1-seed1_dev",
+  "createdAt": "2026-11-10T06:32:38.439Z",
+  "commit": "665ecf4",
+  "config": {
+    "retriever": "bm25",
+    "corpus": "v1",
+    "seed": 1,
+    "split": "dev",
+    "topK": 10
+  },
+  "datasetVersion": "synthetic-v1",
+  "datasetHash": "09e66a01f0fbdde8",
+  "summary": {
+    "all": {
+      "questions": 84,
+      "recallAt1": 0.619,
+      "recallAt5": 0.821,
+      "mrr": 0.707
+    },
+    "literal": {
+      "questions": 42,
+      "recallAt1": 1,
+      "recallAt5": 1,
+      "mrr": 1
+    },
+    "paraphrase": {
+      "questions": 42,
+      "recallAt1": 0.238,
+      "recallAt5": 0.643,
+      "mrr": 0.415
+    }
+  }
+}
