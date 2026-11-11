@@ -1,7 +1,7 @@
 /**
  * Score a retriever on the synthetic question set.
  *
- * Usage: npm run eval -- [--retriever bm25|gemini|hybrid] [--corpus v1|v2] [--seed 1] [--split dev]
+ * Usage: npm run eval -- [--retriever bm25|gemini|hybrid, optionally with +product] [--corpus v1|v2] [--seed 1] [--split dev]
  *                        [--save-baseline | --gate] [--tolerance 0]
  * The held-out split is for the single final Gate 1 comparison, so it needs
  * `--split heldout --final` and is never the default.
@@ -11,11 +11,12 @@
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { generate, TEMPLATE_SETS, type Dataset } from "../corpus/synthetic.js";
+import { generate, productCatalog, TEMPLATE_SETS, type Dataset } from "../corpus/synthetic.js";
 import { loadApiKey } from "../env.js";
 import { Bm25, type Retriever } from "../retrieval/bm25.js";
 import { geminiRetriever } from "../retrieval/embedding.js";
 import { HybridRetriever } from "../retrieval/hybrid.js";
+import { ProductFilter } from "../retrieval/product-filter.js";
 import { compareRuns, makeRecord, RunStore, runKey, type Regression } from "../gate/runs.js";
 import { rankOf, summarizeByStyle, type QuestionResult, type Summary } from "./metrics.js";
 
@@ -31,6 +32,12 @@ export async function evaluate(retriever: Retriever, data: Dataset, split: "dev"
 }
 
 export async function makeRetriever(name: string, data: Dataset, split: "dev" | "heldout"): Promise<Retriever> {
+  if (name.endsWith("+product")) {
+    const set = Object.values(TEMPLATE_SETS).find((t) => t.version === data.version);
+    if (!set) throw new Error(`no product catalogue for ${data.version}`);
+    const inner = await makeRetriever(name.slice(0, -"+product".length), data, split);
+    return new ProductFilter(inner, productCatalog(set), data.passages);
+  }
   if (name === "bm25") return new Bm25(data.passages);
   if (name === "gemini" || name === "hybrid") {
     const embedding = geminiRetriever(data.passages, loadApiKey());

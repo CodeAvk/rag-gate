@@ -129,28 +129,37 @@ export const V1: TemplateSet = {
 
 export const TEMPLATE_SETS: Record<string, TemplateSet> = { v1: V1, v2: V2 };
 
+export interface Product {
+  name: string; // as written in passages and questions, e.g. "Kestrel 4 Pro"
+  docId: string; // e.g. "kestrel-4-pro"
+}
+
+/** Every product in a template set, in generation order. */
+export function productCatalog(set: TemplateSet): Product[] {
+  return set.families.flatMap((family) => set.models.map((model) => ({
+    name: `${family} ${model}`,
+    docId: `${family}-${model}`.toLowerCase().replace(/\s+/g, "-"),
+  })));
+}
+
 export function generate(seed = 1, heldoutShare = 0.5, set: TemplateSet = V1): Dataset {
   const r = rng(seed);
   const pick = (fact: Fact) => (fact.variants && fact.variants > 1 ? int(r, 0, fact.variants - 1) : 0);
   const passages: Passage[] = [];
   const questions: Question[] = [];
-  for (const family of set.families) {
-    for (const model of set.models) {
-      const name = `${family} ${model}`;
-      const docId = `${family}-${model}`.toLowerCase().replace(/\s+/g, "-");
-      for (const fact of set.facts) {
-        const value = fact.value(r);
-        const pid = `${docId}#${fact.key}`;
-        const wording = pick(fact);
-        passages.push({ id: pid, docId, text: fact.passage(name, value, wording), kind: "fact" });
-        for (const style of ["literal", "paraphrase"] as const) {
-          // Literal questions reuse their passage's wording; paraphrases draw their own.
-          const text = style === "literal" ? fact.literal(name, wording) : fact.paraphrase(name, pick(fact));
-          questions.push({ id: `${pid}:${style}`, text, style, goldPassageId: pid, answer: value, split: "dev" });
-        }
+  for (const { name, docId } of productCatalog(set)) {
+    for (const fact of set.facts) {
+      const value = fact.value(r);
+      const pid = `${docId}#${fact.key}`;
+      const wording = pick(fact);
+      passages.push({ id: pid, docId, text: fact.passage(name, value, wording), kind: "fact" });
+      for (const style of ["literal", "paraphrase"] as const) {
+        // Literal questions reuse their passage's wording; paraphrases draw their own.
+        const text = style === "literal" ? fact.literal(name, wording) : fact.paraphrase(name, pick(fact));
+        questions.push({ id: `${pid}:${style}`, text, style, goldPassageId: pid, answer: value, split: "dev" });
       }
-      passages.push({ id: `${docId}#register`, docId, text: set.distractor(name), kind: "distractor" });
     }
+    passages.push({ id: `${docId}#register`, docId, text: set.distractor(name), kind: "distractor" });
   }
   // Seeded split, balanced within each style so dev and held-out have the same mix.
   for (const style of ["literal", "paraphrase"] as const) {

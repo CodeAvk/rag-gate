@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-11: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; next is a product-name check for the look-alike misses.
+Status as of 2026-11-11: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check done; next is a results table in the CI run summary.
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -30,6 +30,7 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] Single held-out run (2026-11-09): **Gate 1 passed** (paraphrase R@5 +19.0 points on v1, +52.4 on v2; literal equal).
 - [x] Gate 3 MVP, part 1 (2026-11-10): run store with config, commit, dataset fingerprint and metrics; committed BM25 baselines for v1 and v2 dev; `--gate` exits 1 on any drop (checked with a deliberately raised baseline).
 - [x] Gate 3 MVP, part 2 (2026-11-11): GitHub Actions runs typecheck, tests, audit and the BM25 gate on every push and pull request; actions pinned to commit SHAs; no secrets.
+- [x] Product-name check (2026-11-11): Gemini v2 dev paraphrase R@1 0.964 to 0.988; fixes 2 of 3 misses; gated in CI on BM25.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
