@@ -17,6 +17,7 @@ import { Bm25, type Retriever } from "../retrieval/bm25.js";
 import { geminiRetriever } from "../retrieval/embedding.js";
 import { HybridRetriever } from "../retrieval/hybrid.js";
 import { ProductFilter } from "../retrieval/product-filter.js";
+import { markdownReport, writeJobSummary } from "../gate/report.js";
 import { compareRuns, makeRecord, RunStore, runKey, type Regression } from "../gate/runs.js";
 import { rankOf, summarizeByStyle, type QuestionResult, type Summary } from "./metrics.js";
 
@@ -116,11 +117,15 @@ async function main() {
   }
   const baseline = store.baseline(name);
   if (!baseline) {
-    if (opts.gate) throw new Error(`no baseline for ${name}: run once with --save-baseline first`);
+    if (opts.gate) {
+      writeJobSummary(markdownReport(record, null, []));
+      throw new Error(`no baseline for ${name}: run once with --save-baseline first`);
+    }
     return;
   }
   const regressions = compareRuns(record, baseline, opts.tolerance);
   console.log(`compared with baseline ${baseline.id} (tolerance ${opts.tolerance})\n${formatRegressions(regressions)}`);
+  if (writeJobSummary(markdownReport(record, baseline, regressions))) console.log("report added to the job summary");
   if (opts.gate && regressions.length > 0) process.exitCode = 1;
 }
 
