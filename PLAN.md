@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-10: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store and regression gate done; next is running the gate in GitHub Actions CI.
+Status as of 2026-11-11: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; next is a product-name check for the look-alike misses.
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -29,9 +29,9 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] Hybrid retriever by reciprocal rank fusion (2026-11-08): worse than embeddings alone on paraphrases (v2 R@1 0.583 vs 0.964); kept as an option, not the default.
 - [x] Single held-out run (2026-11-09): **Gate 1 passed** (paraphrase R@5 +19.0 points on v1, +52.4 on v2; literal equal).
 - [x] Gate 3 MVP, part 1 (2026-11-10): run store with config, commit, dataset fingerprint and metrics; committed BM25 baselines for v1 and v2 dev; `--gate` exits 1 on any drop (checked with a deliberately raised baseline).
-- [ ] Gate 3 MVP, part 2: run the BM25 gate in GitHub Actions on every push (no API key needed).
+- [x] Gate 3 MVP, part 2 (2026-11-11): GitHub Actions runs typecheck, tests, audit and the BM25 gate on every push and pull request; actions pinned to commit SHAs; no secrets.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
 ## Work not done
-No CI workflow yet; Gemini baselines are not committed because CI has no API key; no daily-limit measurement, no interviews (waived), no competitor pricing.
+Gemini baselines are not committed and not checked in CI, because CI has no API key; no daily-limit measurement, no interviews (waived), no competitor pricing.

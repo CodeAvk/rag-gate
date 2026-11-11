@@ -1,0 +1,32 @@
+# Runs on every push and pull request: typecheck, unit tests, dependency audit, then the
+# retrieval regression gate. The gate re-scores BM25 on the synthetic dev sets and fails the
+# build if any metric falls below the committed baseline in baselines/. BM25 needs no API key,
+# so no secrets are used here; Gemini runs stay local because of the free-tier quota.
+name: quality-gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm audit --audit-level=high
+      - name: Retrieval regression gate (BM25, synthetic-v1 dev)
+        run: npm run gate -- --corpus v1
+      - name: Retrieval regression gate (BM25, synthetic-v2 dev)
+        run: npm run gate -- --corpus v2
