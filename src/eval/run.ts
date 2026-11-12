@@ -129,7 +129,7 @@ async function main() {
   if (opts.gate && regressions.length > 0) process.exitCode = 1;
 }
 
-if (process.argv[1]?.endsWith("run.ts")) {
+if (/eval[\\/]run\.ts$/.test(process.argv[1] ?? "")) {
   main().catch((err) => {
     console.error(String(err));
     process.exit(1);

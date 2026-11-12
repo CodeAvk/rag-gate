@@ -4,7 +4,7 @@
 
 A planned TypeScript tool that tests a retrieval-augmented generation (RAG) pipeline like software: it evaluates retrieval and answers, versions every run and index, checks that each citation really supports its answer, and fails CI when quality regresses.
 
-> **Status: early stage. Gate 1 passed:** on held-out synthetic questions, Gemini embeddings beat BM25 by +19 and +52 points of paraphrase Recall@5. Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, a hybrid of the two, an evaluation runner, a product-name check for look-alike products, a run store with a regression gate, and CI that runs the gate on every push. This is a portfolio project; demand has not been validated.
+> **Status: early stage. Gate 1 passed:** on held-out synthetic questions, Gemini embeddings beat BM25 by +19 and +52 points of paraphrase Recall@5. Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, a hybrid of the two, an evaluation runner, a product-name check for look-alike products, grounded answers with citations, a run store with a regression gate, and CI that runs the gate on every push. This is a portfolio project; demand has not been validated.
 
 ## The idea
 
@@ -28,6 +28,7 @@ Built so far (TypeScript, Node 22):
 - `src/retrieval/embedding.ts`: Gemini embedding retrieval with an on-disk vector cache (each text is embedded once), a rate limiter under the free-tier limit, and retry after a 429. On the dev set it scores 1.000 Recall@5 on paraphrases, which also shows the test set is too easy and needs a harder version.
 - `src/gate/runs.ts`: the run store and regression check. Every eval run is appended to a local history with its config, the git commit, a fingerprint of the exact dataset and its metrics. A run can be saved as the baseline for its config (`baselines/`, committed); `--gate` compares a new run with it and exits 1 if any metric (Recall@1, Recall@5, MRR, overall or per style) drops by more than the tolerance. Runs on a changed dataset are refused rather than compared.
 - `src/retrieval/product-filter.ts`: a deterministic product-name check that puts the passages of the product a question names first. It fixes 2 of Gemini's 3 rank-1 misses on the v2 dev set (paraphrase R@1 0.964 to 0.988) with no API call ([docs/PRODUCT_CHECK.md](docs/PRODUCT_CHECK.md)).
+- `src/answer/` and `src/gemini/generate.ts`: grounded answers. Gemini answers from the retrieved passages only, cites passage ids, or returns no answer; JSON output, a hard daily request cap and an answer cache keep it inside the free tier. First run on 6 synthetic questions: 5 correct with the right citation, 1 abstention, 0 wrong ([docs/ANSWERS.md](docs/ANSWERS.md)).
 - `.github/workflows/quality-gate.yml`: CI on every push and pull request. It runs the typecheck, the unit tests and `npm audit`, then the regression gate on BM25 for both synthetic dev sets and on BM25 with the product check for v2. Each gate step adds a table to the run's summary page with every metric, its baseline and the change, and marks any regression (`src/gate/report.ts`). BM25 needs no API key, so CI uses no secrets; Gemini runs stay local because of the free-tier quota.
 
 ```
@@ -43,6 +44,7 @@ npm run eval -- --corpus v2 --save-baseline     # make this run the baseline for
 npm run eval -- --corpus v2 --gate              # compare with the baseline; exit 1 on any drop
 npm run gate -- --corpus v2                     # same check; this is what CI runs
 npm run eval -- --retriever gemini+product --corpus v2   # embeddings plus the product-name check
+npm run answer      # grounded answers for 6 dev questions; up to 6 Gemini requests, cached after
 npm run eval -- --corpus v2 --gate --tolerance 0.02   # allow drops of up to 0.02
 npm run probe       # needs GEMINI_API_KEY in .env; makes up to 60 calls
 ```

@@ -1,6 +1,6 @@
-/** Minimal Gemini embeddings client over REST. `fetch` is injectable so tests never touch the network. */
+/** Minimal Gemini embeddings client over REST, plus the shared POST helper. `fetch` is injectable so tests never touch the network. */
 
-const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+export const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export type TaskType = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY" | "SEMANTIC_SIMILARITY";
 
@@ -27,7 +27,8 @@ function requestBody(text: string, opts: EmbedOptions) {
   };
 }
 
-async function post(url: string, body: unknown, opts: EmbedOptions): Promise<any> {
+/** POST JSON to the Gemini REST API; non-2xx responses become a GeminiHttpError with Google's message. */
+export async function post(url: string, body: unknown, opts: { apiKey: string; fetchImpl?: typeof fetch }): Promise<any> {
   const res = await (opts.fetchImpl ?? fetch)(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
