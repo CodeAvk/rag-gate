@@ -75,9 +75,11 @@ export class AnswerCache {
 
 export async function answerQuestion(
   question: string, retriever: Retriever, textOf: Map<string, string>,
-  generate: Generate, cache: AnswerCache, model: string, k = 5,
+  generate: Generate, cache: AnswerCache, model: string, k = 5, exclude: string[] = [],
 ): Promise<AnsweredQuestion> {
-  const retrieved = (await retriever.search(question, k)).map((h) => h.id);
+  // `exclude` hides passages from the model, e.g. the gold one, to test that it abstains.
+  const retrieved = (await retriever.search(question, k + exclude.length))
+    .map((h) => h.id).filter((id) => !exclude.includes(id)).slice(0, k);
   const prompt = buildPrompt(question, retrieved.map((id) => ({ id, text: textOf.get(id) ?? "" })));
   const key = AnswerCache.key(model, prompt);
   const hit = cache.get(key);

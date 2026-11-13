@@ -111,7 +111,7 @@ describe("grounded answering", () => {
 
 describe("answer CLI", () => {
   it("defaults to a small v2 sample and bounds the limit", () => {
-    expect(parseAnswerArgs([])).toEqual({ corpus: "v2", retriever: "gemini+product", limit: 6, model: "gemini-2.5-flash-lite" });
+    expect(parseAnswerArgs([])).toEqual({ corpus: "v2", retriever: "gemini+product", limit: 6, model: "gemini-2.5-flash-lite", dropGold: false });
     expect(() => parseAnswerArgs(["--limit", "50"])).toThrow(/limit/);
     expect(() => parseAnswerArgs(["--corpus", "v9"])).toThrow(/corpus/);
   });

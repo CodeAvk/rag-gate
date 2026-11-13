@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-12: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers with citations done (first 6-question run); next is a deterministic check that each citation supports its answer.
+Status as of 2026-11-13: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers and the citation check done; next is a dashboard of runs.
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -33,7 +33,9 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] Product-name check (2026-11-11): Gemini v2 dev paraphrase R@1 0.964 to 0.988; fixes 2 of 3 misses; gated in CI on BM25.
 - [x] CI results table (2026-11-11): each gate step writes metric, baseline and change to the GitHub Actions job summary, with regressions marked.
 - [x] Grounded answers (2026-11-12): Gemini answers from retrieved passages with citations or abstains; daily cap 15, answer cache; 6-question smoke run 5 correct, 1 abstention, 0 wrong.
-- [ ] Citation check: verify each cited passage supports the answer; report unsupported answers as abstentions.
+- [x] Citation check (2026-11-13): retrieved, right product, numbers present; unsupported answers become abstentions. Gold hidden: 6/6 abstained. Broken answers: 15/15 caught.
+- [ ] Grow the answer sample over several days within the free quota.
+- [ ] Next.js dashboard of runs and answers.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 
