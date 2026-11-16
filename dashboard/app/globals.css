@@ -72,3 +72,19 @@ td { border-bottom: 1px solid var(--line); padding: 6px 8px; vertical-align: top
 
 .empty { color: var(--dim); background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; padding: 16px; }
 footer { margin-top: 40px; color: var(--dim); font-size: 13px; }
+
+nav.top { max-width: 1120px; margin: 0 auto; padding: 20px 16px 0; display: flex; gap: 18px; font-size: 14px; }
+nav.top a { color: var(--dim); text-decoration: none; }
+nav.top a:hover { color: var(--text); text-decoration: underline; }
+nav.top + main { padding-top: 16px; }
+
+.report { margin-bottom: 20px; }
+.tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 4px 0 12px; }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.tile b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--dim); font-size: 12.5px; }
+.tile.bad b { color: var(--bad); }
+.answers { min-width: 860px; }
+.ids { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
+code.gold { outline: 1px solid var(--ok); }
+.reasons { margin: 4px 0 0; padding-left: 18px; color: var(--bad); font-size: 12px; }
