@@ -57,6 +57,13 @@ function Report({ rep }: { rep: AnswerReport }) {
         {rep.retriever} <span className="dim">on {rep.corpus}, {rep.model}{rep.dropGold && ", gold passage hidden"}</span>
       </h3>
       <p className="meta"><code>{rep.file}</code> · written {when(rep.writtenAt)}</p>
+      {rep.rows.length < rep.sampled && (
+        <p className="partial">
+          <span className="badge warn">partial</span> {rep.rows.length} of {rep.sampled} questions answered
+          {rep.stopped ? `: ${rep.stopped}` : ""}. Rerun the same command on a later day; answered questions come from
+          the cache.
+        </p>
+      )}
       <div className="tiles">
         <div className="tile"><b>{h.correct}</b><span>shown and correct</span></div>
         <div className={`tile ${h.wrong > 0 ? "bad" : ""}`}><b>{h.wrong}</b><span>shown and wrong</span></div>

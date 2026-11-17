@@ -58,3 +58,26 @@ To show the check working on realistic text, the CLI also breaks each supported 
 - A number that is in a cited passage but answers a different question (quoting the battery hours when asked about recharge time, while citing the battery passage) passes the check. Catching that would need the question's topic matched to the passage, which is not built.
 - The product check only applies when the question names a catalogue product.
 - 12 real answers is a small sample, limited by the free daily quota.
+
+## Growing the sample (added 2026-11-17)
+
+The free tier allows about 15 answers a day, so a 60-question sample is built over several days:
+
+- The sample order is fixed and prefix-stable: questions alternate literal and paraphrased, and each style is walked in bit-reversed order so any prefix is spread across products. Raising `--limit` keeps every earlier question, so answered questions come from the cache and cost nothing.
+- When the daily cap is reached, or Gemini returns 429, 500 or 503, the run stops, still writes its report (`sampled`, `stopped`), and exits normally. There is no automatic retry, because every attempt counts against the free quota.
+- The dashboard marks such a report as partial.
+
+Command, run once a day until it completes: `npm run answer -- --corpus v2 --retriever gemini+product --limit 60`.
+
+### Day 1 (2026-11-17, Pacific date 2026-11-16)
+
+| | Count |
+|---|---|
+| Questions answered | 15 of 60 (2 from the cache, 13 new) |
+| Requests used | 15 of 15: 13 answers and 2 attempts that failed with HTTP 503 ("high demand") |
+| Model correct, citing the gold passage | 15 / 15 |
+| Citation check: supported / unsupported | 15 / 0 |
+| Shown: correct / wrong / abstained | 15 / 0 / 0 |
+| Self-test on broken copies | wrong number 15/15, look-alike product 15/15, invented citation 15/15 |
+
+15 of 15 is still a small sample, and so far every answer was a short fact the check is built for. The 60-question criterion in `PLAN.md` is not met yet; at this rate it needs about three more days.

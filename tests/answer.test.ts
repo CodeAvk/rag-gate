@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { AnswerCache, answerQuestion, buildPrompt, containsExpected, type Answer } from "../src/answer/answer.js";
-import { parseAnswerArgs, sampleQuestions } from "../src/answer/run.js";
+import { MAX_LIMIT, parseAnswerArgs, sampleQuestions, spreadOrder, stopsBatch } from "../src/answer/run.js";
+import { GeminiHttpError } from "../src/gemini/embed.js";
 import { generate } from "../src/corpus/synthetic.js";
 import { V2 } from "../src/corpus/synthetic-v2.js";
 import { DailyCapError, generateJson, pacificDate, UsageCounter } from "../src/gemini/generate.js";
@@ -112,7 +113,9 @@ describe("grounded answering", () => {
 describe("answer CLI", () => {
   it("defaults to a small v2 sample and bounds the limit", () => {
     expect(parseAnswerArgs([])).toEqual({ corpus: "v2", retriever: "gemini+product", limit: 6, model: "gemini-2.5-flash-lite", dropGold: false });
-    expect(() => parseAnswerArgs(["--limit", "50"])).toThrow(/limit/);
+    expect(parseAnswerArgs(["--limit", "60"]).limit).toBe(60);
+    expect(() => parseAnswerArgs(["--limit", "500"])).toThrow(/limit/);
+    expect(() => parseAnswerArgs(["--limit", "0"])).toThrow(/limit/);
     expect(() => parseAnswerArgs(["--corpus", "v9"])).toThrow(/corpus/);
   });
 
@@ -122,5 +125,31 @@ describe("answer CLI", () => {
     expect(qs.every((q) => q.split === "dev")).toBe(true);
     expect(qs.filter((q) => q.style === "literal")).toHaveLength(3);
     expect(new Set(qs.map((q) => q.goldPassageId.split("#")[0])).size).toBeGreaterThan(3);
+  });
+
+  it("keeps every earlier question when the limit grows, so cached answers are reused", () => {
+    const questions = generate(1, 0.5, V2).questions;
+    const ids = (n: number) => sampleQuestions(questions, n).map((q) => q.id);
+    expect(ids(20).slice(0, 6)).toEqual(ids(6));
+    expect(ids(60).slice(0, 21)).toEqual(ids(21));
+    const all = ids(MAX_LIMIT);
+    expect(new Set(all).size).toBe(all.length);
+    expect(all).toHaveLength(questions.filter((q) => q.split === "dev").length);
+  });
+
+  it("orders indices so every prefix is spread across the range", () => {
+    expect(spreadOrder(8)).toEqual([0, 4, 2, 6, 1, 5, 3, 7]);
+    expect(spreadOrder(5)).toEqual([0, 4, 2, 1, 3]);
+    expect(spreadOrder(1)).toEqual([0]);
+    expect(spreadOrder(0)).toEqual([]);
+    expect([...spreadOrder(84)].sort((a, b) => a - b)).toEqual([...Array(84).keys()]);
+  });
+
+  it("ends a batch cleanly on the daily cap, rate limits and overload, but not on other errors", () => {
+    expect(stopsBatch(new DailyCapError("cap"))).toBe(true);
+    expect(stopsBatch(new GeminiHttpError(503, "high demand"))).toBe(true);
+    expect(stopsBatch(new GeminiHttpError(429, "quota"))).toBe(true);
+    expect(stopsBatch(new GeminiHttpError(400, "bad request"))).toBe(false);
+    expect(stopsBatch(new Error("bug"))).toBe(false);
   });
 });

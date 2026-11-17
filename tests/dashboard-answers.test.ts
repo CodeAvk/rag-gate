@@ -69,7 +69,16 @@ describe("loadAnswerReports", () => {
     const { root, dir } = answersDir();
     const { selfTest: _dropped, ...older } = report([row()]);
     writeFileSync(join(dir, "older.json"), JSON.stringify(older));
-    expect(loadAnswerReports(root)[0]!.selfTest).toEqual({});
+    const [r] = loadAnswerReports(root);
+    expect(r!.selfTest).toEqual({});
+    expect([r!.sampled, r!.stopped]).toEqual([1, null]);
+  });
+
+  it("keeps how far a run got when the daily cap stopped it", () => {
+    const { root, dir } = answersDir();
+    writeFileSync(join(dir, "partial.json"), JSON.stringify(report([row()], { sampled: 60, stopped: "daily cap of 15 requests reached" })));
+    const [r] = loadAnswerReports(root);
+    expect([r!.rows.length, r!.sampled, r!.stopped]).toEqual([1, 60, "daily cap of 15 requests reached"]);
   });
 
   it("returns nothing on a fresh clone", () => {

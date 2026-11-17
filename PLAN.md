@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-17: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs with a score trend, answers) done; next is growing the answer sample and the competitor check.
+Status as of 2026-11-17: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs with a score trend, answers) done; the answer sample now grows day by day (15 of 60 answered on 2026-11-17).
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -34,7 +34,7 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] CI results table (2026-11-11): each gate step writes metric, baseline and change to the GitHub Actions job summary, with regressions marked.
 - [x] Grounded answers (2026-11-12): Gemini answers from retrieved passages with citations or abstains; daily cap 15, answer cache; 6-question smoke run 5 correct, 1 abstention, 0 wrong.
 - [x] Citation check (2026-11-13): retrieved, right product, numbers present; unsupported answers become abstentions. Gold hidden: 6/6 abstained. Broken answers: 15/15 caught.
-- [ ] Grow the answer sample over several days within the free quota.
+- [ ] Grow the answer sample over several days within the free quota. Started 2026-11-17: prefix-stable sample, clean stop at the cap or on 429/500/503; day 1 answered 15 of 60, all correct and supported (`docs/ANSWERS.md`).
 - [x] Dashboard, part 1 (2026-11-15): Next.js page with baselines and run history, status per run; built in CI.
 - [x] Dashboard, part 2 (2026-11-16): answers page with citation-check verdicts, reasons and the shown outcome per question.
 - [x] Dashboard, part 3 (2026-11-17): score trend, one small chart per run config with both question styles and the baseline; metric switch for Recall@1, Recall@5 and MRR.

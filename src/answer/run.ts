@@ -4,6 +4,8 @@
  * Usage: npm run answer -- [--corpus v2] [--retriever gemini+product] [--limit 6] [--model gemini-2.5-flash-lite]
  *                          [--drop-gold]
  * Each new question costs one generateContent request against a daily cap; cached answers are free.
+ * When the cap is reached the run stops, still writes its report, and the same command picks up
+ * the rest on a later day, because the sample order is prefix-stable and earlier answers are cached.
  * Every answer then goes through the deterministic citation check; unsupported answers count as
  * abstentions. `--drop-gold` hides the gold passage from the model, so the right outcome is to abstain.
  */
@@ -11,7 +13,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { generate as generateDataset, productCatalog, TEMPLATE_SETS, type Question } from "../corpus/synthetic.js";
 import { loadApiKey } from "../env.js";
 import { makeRetriever } from "../eval/run.js";
-import { DEFAULT_MODEL, generateJson, UsageCounter } from "../gemini/generate.js";
+import { GeminiHttpError } from "../gemini/embed.js";
+import { DailyCapError, DEFAULT_MODEL, generateJson, UsageCounter } from "../gemini/generate.js";
 import { findProduct } from "../retrieval/product-filter.js";
 import { AnswerCache, answerQuestion, containsExpected, type Answer } from "./answer.js";
 import { mutations, verifyAnswer, type Verdict } from "./verify.js";
@@ -25,20 +28,54 @@ export function parseAnswerArgs(argv: string[]) {
   const corpus = arg(argv, "--corpus", "v2");
   if (!TEMPLATE_SETS[corpus]) throw new Error(`unknown corpus: ${corpus}`);
   const limit = Number(arg(argv, "--limit", "6"));
-  if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error(`limit must be 1..20: ${limit}`);
+  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw new Error(`limit must be 1..${MAX_LIMIT}: ${limit}`);
   return {
     corpus, retriever: arg(argv, "--retriever", "gemini+product"), limit, model: arg(argv, "--model", DEFAULT_MODEL),
     dropGold: argv.includes("--drop-gold"),
   };
 }
 
-/** An even spread of dev questions, half literal and half paraphrased, in a fixed order. */
+/** Errors that end a batch cleanly instead of failing it: the daily cap, rate limits, server overload. */
+export function stopsBatch(err: unknown): boolean {
+  if (err instanceof DailyCapError) return true;
+  return err instanceof GeminiHttpError && [429, 500, 503].includes(err.status);
+}
+
+/** Upper bound for `--limit`; the sample itself stops at the size of the dev split. */
+export const MAX_LIMIT = 200;
+
+/**
+ * 0..m-1 in bit-reversed order (0, m/2, m/4, 3m/4, ...): every prefix is spread evenly over the
+ * range, so the first few questions already cover many products.
+ */
+export function spreadOrder(m: number): number[] {
+  let bits = 0;
+  while (1 << bits < m) bits++;
+  const out: number[] = [];
+  for (let i = 0; i < 1 << bits; i++) {
+    let r = 0;
+    for (let b = 0; b < bits; b++) if (i & (1 << b)) r |= 1 << (bits - 1 - b);
+    if (r < m) out.push(r);
+  }
+  return out;
+}
+
+/**
+ * Dev questions in a fixed order, alternating literal and paraphrased, each style spread across
+ * products. The order is prefix-stable: raising `limit` keeps every earlier question, so a larger
+ * sample grows day by day through the answer cache instead of starting over.
+ */
 export function sampleQuestions(questions: Question[], limit: number): Question[] {
-  const out: Question[] = [];
-  for (const [style, n] of [["literal", Math.floor(limit / 2)], ["paraphrase", Math.ceil(limit / 2)]] as const) {
+  const byStyle = (["literal", "paraphrase"] as const).map((style) => {
     const pool = questions.filter((q) => q.split === "dev" && q.style === style);
-    const step = Math.max(1, Math.floor(pool.length / Math.max(1, n)));
-    for (let i = 0; i < n && i * step < pool.length; i++) out.push(pool[i * step]!);
+    return spreadOrder(pool.length).map((i) => pool[i]!);
+  });
+  const out: Question[] = [];
+  for (let i = 0; out.length < limit && i < Math.max(...byStyle.map((p) => p.length)); i++) {
+    for (const pool of byStyle) {
+      const q = pool[i];
+      if (q && out.length < limit) out.push(q);
+    }
   }
   return out;
 }
@@ -73,9 +110,22 @@ async function main() {
   const generate = (prompt: string, schema: object) => generateJson<Answer>(prompt, schema, { model: opts.model, apiKey, usage });
 
   const rows: Row[] = [];
-  for (const q of sampleQuestions(data.questions, opts.limit)) {
-    const a = await answerQuestion(q.text, retriever, textOf, generate, cache, opts.model, 5,
-      opts.dropGold ? [q.goldPassageId] : []);
+  const sample = sampleQuestions(data.questions, opts.limit);
+  let stopped: string | null = null;
+  for (const q of sample) {
+    let a: Awaited<ReturnType<typeof answerQuestion>>;
+    try {
+      a = await answerQuestion(q.text, retriever, textOf, generate, cache, opts.model, 5,
+        opts.dropGold ? [q.goldPassageId] : []);
+    } catch (err) {
+      // The daily cap or a temporary API failure ends this batch; keep what was answered. Answered
+      // questions are cached, so a rerun costs nothing for them. No automatic retry: every attempt
+      // counts against the free quota.
+      if (!stopsBatch(err)) throw err;
+      stopped = (err as Error).message;
+      console.log(`stopped after ${rows.length} of ${sample.length}: ${stopped}`);
+      break;
+    }
     const check = verifyAnswer(a, { textOf, docOf, product: findProduct(q.text, catalog) });
     const row: Row = {
       id: q.id, style: q.style, question: q.text, expected: q.answer, gold: q.goldPassageId,
@@ -115,8 +165,8 @@ async function main() {
       Object.entries(selfTest).map(([k, t]) => `${k} ${t.caught}/${t.tried}`).join(", "));
   }
   mkdirSync("data/answers", { recursive: true });
-  const file = `data/answers/${opts.retriever}_${data.version}_${opts.model}_n${n}${opts.dropGold ? "_dropgold" : ""}.json`;
-  writeFileSync(file, JSON.stringify({ ...opts, totals, selfTest, rows }, null, 2));
+  const file = `data/answers/${opts.retriever}_${data.version}_${opts.model}_limit${opts.limit}${opts.dropGold ? "_dropgold" : ""}.json`;
+  writeFileSync(file, JSON.stringify({ ...opts, sampled: sample.length, stopped, totals, selfTest, rows }, null, 2));
   console.log(`written: ${file}`);
 }
 

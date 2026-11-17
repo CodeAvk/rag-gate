@@ -121,3 +121,4 @@ code.gold { outline: 1px solid var(--ok); }
 .trend-panel .series.s2 .dot { fill: var(--s2); }
 .trend-panel .hit { fill: transparent; }
 .trend-panel .pt:hover .dot { r: 5; }
+.partial { font-size: 13px; margin: 0 0 10px; }

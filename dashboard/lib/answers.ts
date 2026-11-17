@@ -48,6 +48,8 @@ export interface AnswerReport {
   model: string;
   limit: number;
   dropGold: boolean;
+  sampled: number; // questions in the sample; more than rows.length when the run stopped early
+  stopped: string | null; // why the run stopped early (the daily request cap), or null
   totals: AnswerTotals;
   selfTest: Record<string, { tried: number; caught: number }>;
   rows: AnswerRow[];
@@ -86,8 +88,11 @@ export function loadAnswerReports(root: string): AnswerReport[] {
       continue;
     }
     if (!isReport(parsed)) continue;
-    // Reports written before the check's self-test existed have no `selfTest` field.
-    reports.push({ ...parsed, selfTest: parsed.selfTest ?? {}, file, writtenAt: statSync(path).mtime.toISOString() });
+    // Older reports have no self-test and were never partial.
+    reports.push({
+      ...parsed, selfTest: parsed.selfTest ?? {}, sampled: parsed.sampled ?? parsed.rows.length, stopped: parsed.stopped ?? null,
+      file, writtenAt: statSync(path).mtime.toISOString(),
+    });
   }
   return reports.sort((a, b) => b.writtenAt.localeCompare(a.writtenAt) || a.file.localeCompare(b.file));
 }
