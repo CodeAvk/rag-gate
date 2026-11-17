@@ -38,7 +38,7 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [x] Dashboard, part 1 (2026-11-15): Next.js page with baselines and run history, status per run; built in CI.
 - [x] Dashboard, part 2 (2026-11-16): answers page with citation-check verdicts, reasons and the shown outcome per question.
 - [x] Dashboard, part 3 (2026-11-17): score trend, one small chart per run config with both question styles and the baseline; metric switch for Recall@1, Recall@5 and MRR.
-- [ ] Read promptfoo's RAG docs and update the competitor table.
+- [x] Read promptfoo's RAG docs and update the competitor table (2026-11-17): promptfoo, Ragas and DeepEval checked from their docs; overlap is large, differences are the deterministic answer check and the baseline gate (`PRODUCT_RESEARCH.md`).
 - [x] Gate 2 decision: waived (2026-11-02).
 
 ## Work not done
