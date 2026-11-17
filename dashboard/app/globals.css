@@ -88,3 +88,36 @@ nav.top + main { padding-top: 16px; }
 .ids { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; }
 code.gold { outline: 1px solid var(--ok); }
 .reasons { margin: 4px 0 0; padding-left: 18px; color: var(--bad); font-size: 12px; }
+
+/* Score trend. Series colours are validated for both themes (dataviz palette slots 1 and 2). */
+:root { --s1: #2a78d6; --s2: #eb6834; --grid: #ecece9; }
+@media (prefers-color-scheme: dark) { :root { --s1: #3987e5; --s2: #d95926; --grid: #2a2c30; } }
+.trend-controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg a { padding: 4px 12px; font-size: 13px; color: var(--dim); text-decoration: none; }
+.seg a + a { border-left: 1px solid var(--line); }
+.seg a[aria-current="true"] { color: var(--text); background: var(--code); font-weight: 600; }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; font-size: 13px; color: var(--dim); }
+.legend li, .trend-latest li { display: flex; align-items: center; gap: 6px; }
+.key { display: inline-block; width: 14px; height: 2px; border-radius: 2px; }
+.key.s1 { background: var(--s1); }
+.key.s2 { background: var(--s2); }
+.key.baseline-key { background: var(--dim); opacity: 0.45; height: 1px; }
+.trend-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.trend-panel { margin: 0; }
+.trend-latest { list-style: none; margin: 4px 0 6px; padding: 0; font-size: 12.5px; }
+.trend-latest b { font-variant-numeric: tabular-nums; }
+.trend-panel svg { display: block; width: 100%; height: auto; overflow: visible; }
+.trend-panel .gridline { stroke: var(--grid); stroke-width: 1; }
+.trend-panel .tick { fill: var(--dim); font-size: 10px; font-variant-numeric: tabular-nums; }
+.trend-panel .baseline { stroke-width: 1; opacity: 0.4; }
+.trend-panel .baseline.s1 { stroke: var(--s1); }
+.trend-panel .baseline.s2 { stroke: var(--s2); }
+.trend-panel .series path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trend-panel .series.s1 path { stroke: var(--s1); }
+.trend-panel .series.s2 path { stroke: var(--s2); }
+.trend-panel .dot { stroke: var(--panel); stroke-width: 2; }
+.trend-panel .series.s1 .dot { fill: var(--s1); }
+.trend-panel .series.s2 .dot { fill: var(--s2); }
+.trend-panel .hit { fill: transparent; }
+.trend-panel .pt:hover .dot { r: 5; }

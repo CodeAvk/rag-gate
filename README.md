@@ -30,7 +30,7 @@ Built so far (TypeScript, Node 22):
 - `src/retrieval/product-filter.ts`: a deterministic product-name check that puts the passages of the product a question names first. It fixes 2 of Gemini's 3 rank-1 misses on the v2 dev set (paraphrase R@1 0.964 to 0.988) with no API call ([docs/PRODUCT_CHECK.md](docs/PRODUCT_CHECK.md)).
 - `src/answer/` and `src/gemini/generate.ts`: grounded answers. Gemini answers from the retrieved passages only, cites passage ids, or returns no answer; JSON output, a hard daily request cap and an answer cache keep it inside the free tier. First run on 6 synthetic questions: 5 correct with the right citation, 1 abstention, 0 wrong ([docs/ANSWERS.md](docs/ANSWERS.md)).
 - `src/answer/verify.ts`: the citation check, with no model involved. An answer is shown only if every cited passage was retrieved, is about the product asked about, and contains every number in the answer; otherwise it is reported as an abstention with the reasons. With the gold passage hidden, Gemini abstained on 6 of 6 questions; on deliberately broken answers the check caught 15 of 15 ([docs/ANSWERS.md](docs/ANSWERS.md)).
-- `dashboard/`: a Next.js 16 dashboard (React server components, TypeScript) over the run store. It has two pages. The first shows the committed baselines and every local evaluation run with its pass or regression status against the baseline. The second, `/answers`, shows each grounded-answer report: what the model answered and cited, the citation check's verdict and reasons, and what the reader is finally shown (correct, wrong or abstained). It is read-only and reads the files at request time; a test keeps its status rule in agreement with the CI gate.
+- `dashboard/`: a Next.js 16 dashboard (React server components, TypeScript) over the run store. It has two pages. The first shows the committed baselines, a score trend (one small chart per run config, Recall@1, Recall@5 or MRR over time against the baseline) and every local evaluation run with its pass or regression status against the baseline. The second, `/answers`, shows each grounded-answer report: what the model answered and cited, the citation check's verdict and reasons, and what the reader is finally shown (correct, wrong or abstained). It is read-only and reads the files at request time; a test keeps its status rule in agreement with the CI gate.
 - `.github/workflows/quality-gate.yml`: CI on every push and pull request. It runs the typecheck, the unit tests and `npm audit`, then the regression gate on BM25 for both synthetic dev sets and on BM25 with the product check for v2. A second job audits, type-checks and builds the dashboard. Each gate step adds a table to the run's summary page with every metric, its baseline and the change, and marks any regression (`src/gate/report.ts`). BM25 needs no API key, so CI uses no secrets; Gemini runs stay local because of the free-tier quota.
 
 ```
@@ -61,6 +61,8 @@ npm run dev         # http://localhost:3000
 ```
 
 ![Dashboard: baselines and run history](docs/screenshots/dashboard.png)
+
+![Dashboard: score trend per run config](docs/screenshots/trend.png)
 
 ![Dashboard: grounded answers with citation-check verdicts](docs/screenshots/answers.png)
 

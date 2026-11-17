@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-16: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs, answers) done; next is a score trend chart.
+Status as of 2026-11-17: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs with a score trend, answers) done; next is growing the answer sample and the competitor check.
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -37,7 +37,7 @@ Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or 
 - [ ] Grow the answer sample over several days within the free quota.
 - [x] Dashboard, part 1 (2026-11-15): Next.js page with baselines and run history, status per run; built in CI.
 - [x] Dashboard, part 2 (2026-11-16): answers page with citation-check verdicts, reasons and the shown outcome per question.
-- [ ] Dashboard, part 3: score trend chart over the run history.
+- [x] Dashboard, part 3 (2026-11-17): score trend, one small chart per run config with both question styles and the baseline; metric switch for Recall@1, Recall@5 and MRR.
 - [ ] Read promptfoo's RAG docs and update the competitor table.
 - [x] Gate 2 decision: waived (2026-11-02).
 

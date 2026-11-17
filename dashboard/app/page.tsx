@@ -1,4 +1,6 @@
 import { loadDashboard, runKey, type RunRecord, type Status, type Summary } from "../lib/data";
+import { METRIC_LABELS, parseMetric } from "../lib/trend";
+import { TrendChart } from "./trend-chart";
 
 // Read the run store on every request, so a new eval run shows up on refresh.
 export const dynamic = "force-dynamic";
@@ -41,7 +43,8 @@ function BaselineCard({ b }: { b: RunRecord }) {
   );
 }
 
-export default function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const metric = parseMetric((await searchParams).metric);
   const data = loadDashboard();
   const counts = data.runs.reduce<Record<string, number>>((acc, r) => ({ ...acc, [r.status]: (acc[r.status] ?? 0) + 1 }), {});
 
@@ -61,6 +64,11 @@ export default function Page() {
         ) : (
           <div className="grid">{data.baselines.map((b) => <BaselineCard key={runKey(b)} b={b} />)}</div>
         )}
+      </section>
+
+      <section>
+        <h2>Score trend <span className="dim">({METRIC_LABELS[metric]} per run, one panel per config; hover a point for its run)</span></h2>
+        <TrendChart runs={data.runs.map((r) => r.run)} baselines={data.baselines} metric={metric} />
       </section>
 
       <section>
