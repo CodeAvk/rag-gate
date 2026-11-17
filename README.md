@@ -2,54 +2,78 @@
 
 [![quality-gate](https://github.com/CodeAvk/rag-gate/actions/workflows/quality-gate.yml/badge.svg)](https://github.com/CodeAvk/rag-gate/actions/workflows/quality-gate.yml)
 
-A planned TypeScript tool that tests a retrieval-augmented generation (RAG) pipeline like software: it evaluates retrieval and answers, versions every run and index, checks that each citation really supports its answer, and fails CI when quality regresses.
+A TypeScript quality gate for retrieval-augmented generation (RAG). It scores retrieval against a fixed question set, records every run with its config, git commit and dataset fingerprint, checks without any model that each cited passage really supports the answer, and fails CI when a metric drops below the committed baseline.
 
-> **Status: early stage. Gate 1 passed:** on held-out synthetic questions, Gemini embeddings beat BM25 by +19 and +52 points of paraphrase Recall@5. Built so far: the Gemini embeddings client, a quota probe, a synthetic test corpus, the BM25 baseline, Gemini embedding retrieval with a cached index, a hybrid of the two, an evaluation runner, a product-name check for look-alike products, grounded answers with a citation check, a dashboard for runs and checked answers, a run store with a regression gate, and CI that runs the gate on every push. This is a portfolio project; demand has not been validated.
+> Portfolio project. It runs on synthetic data and the free tier of the Gemini API. Demand has not been validated.
 
-## The idea
+## Results so far
 
-RAG systems change often (chunk size, embedding model, prompt), and a small change can silently make answers worse. RAG Gate would make that visible:
+All numbers are on synthetic test sets generated in this repo ([docs/CORPUS.md](docs/CORPUS.md)).
 
-- run a fixed question set against a versioned index;
-- compare retrieval from keyword search (BM25) and from embeddings, so the AI part has to earn its place;
-- verify that each cited passage supports the answer, and report an abstention when it does not;
-- store runs and compare them with the last good one;
-- exit non-zero in CI when a metric drops.
+| Question | Result | Evidence |
+|---|---|---|
+| Does the AI beat a non-AI baseline? | Yes, on paraphrased questions. Held-out Recall@5: Gemini embeddings beat BM25 by +19 points (v1) and +52 points (v2); equal on literal questions. | [docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md) |
+| Does a deterministic product-name check help? | Gemini v2 dev paraphrase Recall@1 from 0.964 to 0.988, with no extra API call. | [docs/PRODUCT_CHECK.md](docs/PRODUCT_CHECK.md) |
+| Are grounded answers right? | 19 distinct questions answered so far: 18 correct with the right citation, 1 abstention, 0 wrong answers shown. | [docs/ANSWERS.md](docs/ANSWERS.md) |
+| Does the citation check catch bad answers? | Gold passage hidden: 6 of 6 abstained. Deliberately broken answers (wrong number, look-alike product, invented citation): every one caught. | [docs/ANSWERS.md](docs/ANSWERS.md) |
+| Does the gate stop a regression? | A deliberately raised baseline makes the gate exit 1; an unchanged config passes. | [PLAN.md](PLAN.md) |
 
-## Where this stands
+The answer sample is small. It grows by about 15 questions a day within the free quota, towards 60.
 
-Built so far (TypeScript, Node 22):
+## How it works
 
-- `src/gemini/embed.ts`: a small REST client for Gemini embeddings (single and batch), with readable errors and a parser for Google's quota messages.
-- `src/gate0/probe.ts`: measures what the free tier allows, using synthetic text and a hard cap on calls. First result: 100 embedding requests per minute ([docs/GATE0_RESULTS.md](docs/GATE0_RESULTS.md)).
-- `src/corpus/`: seeded generators for two synthetic test sets with exact answers, literal and paraphrased questions, and a held-out split. v2 is the harder one: 24 look-alike products, varied wording and topic traps ([docs/CORPUS.md](docs/CORPUS.md)).
-- `src/retrieval/bm25.ts` and `src/eval/`: the BM25 keyword baseline and an evaluation runner (Recall@1, Recall@5, MRR, per question style). BM25 solves literal questions perfectly but reaches only 0.643 Recall@5 on paraphrases ([docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md)).
-- `src/retrieval/hybrid.ts`: hybrid retrieval by reciprocal rank fusion of BM25 and embeddings. On these test sets it is worse than embeddings alone, because BM25 is confidently wrong on paraphrases, so it is not the default ([docs/GATE1_RESULTS.md](docs/GATE1_RESULTS.md)).
-- `src/retrieval/embedding.ts`: Gemini embedding retrieval with an on-disk vector cache (each text is embedded once), a rate limiter under the free-tier limit, and retry after a 429. On the dev set it scores 1.000 Recall@5 on paraphrases, which also shows the test set is too easy and needs a harder version.
-- `src/gate/runs.ts`: the run store and regression check. Every eval run is appended to a local history with its config, the git commit, a fingerprint of the exact dataset and its metrics. A run can be saved as the baseline for its config (`baselines/`, committed); `--gate` compares a new run with it and exits 1 if any metric (Recall@1, Recall@5, MRR, overall or per style) drops by more than the tolerance. Runs on a changed dataset are refused rather than compared.
-- `src/retrieval/product-filter.ts`: a deterministic product-name check that puts the passages of the product a question names first. It fixes 2 of Gemini's 3 rank-1 misses on the v2 dev set (paraphrase R@1 0.964 to 0.988) with no API call ([docs/PRODUCT_CHECK.md](docs/PRODUCT_CHECK.md)).
-- `src/answer/` and `src/gemini/generate.ts`: grounded answers. Gemini answers from the retrieved passages only, cites passage ids, or returns no answer; JSON output, a hard daily request cap and an answer cache keep it inside the free tier. First run on 6 synthetic questions: 5 correct with the right citation, 1 abstention, 0 wrong ([docs/ANSWERS.md](docs/ANSWERS.md)).
-- `src/answer/verify.ts`: the citation check, with no model involved. An answer is shown only if every cited passage was retrieved, is about the product asked about, and contains every number in the answer; otherwise it is reported as an abstention with the reasons. With the gold passage hidden, Gemini abstained on 6 of 6 questions; on deliberately broken answers the check caught 15 of 15 ([docs/ANSWERS.md](docs/ANSWERS.md)).
-- `dashboard/`: a Next.js 16 dashboard (React server components, TypeScript) over the run store. It has two pages. The first shows the committed baselines, a score trend (one small chart per run config, Recall@1, Recall@5 or MRR over time against the baseline) and every local evaluation run with its pass or regression status against the baseline. The second, `/answers`, shows each grounded-answer report: what the model answered and cited, the citation check's verdict and reasons, and what the reader is finally shown (correct, wrong or abstained). It is read-only and reads the files at request time; a test keeps its status rule in agreement with the CI gate.
-- `.github/workflows/quality-gate.yml`: CI on every push and pull request. It runs the typecheck, the unit tests and `npm audit`, then the regression gate on BM25 for both synthetic dev sets and on BM25 with the product check for v2. A second job audits, type-checks and builds the dashboard. Each gate step adds a table to the run's summary page with every metric, its baseline and the change, and marks any regression (`src/gate/report.ts`). BM25 needs no API key, so CI uses no secrets; Gemini runs stay local because of the free-tier quota.
+```mermaid
+flowchart LR
+  C[Synthetic corpus<br/>v1, v2, seeded] --> R{Retriever}
+  R -->|BM25| H[Top-k passages]
+  R -->|Gemini embeddings<br/>cached vectors| H
+  R -->|+ product-name check| H
+  H --> E[Metrics<br/>Recall@1, Recall@5, MRR<br/>per question style]
+  E --> S[(Run store<br/>config, commit,<br/>dataset hash)]
+  S --> G{Gate vs committed<br/>baseline}
+  G -->|any drop| F[CI fails, exit 1]
+  G -->|no drop| P[CI passes]
+  H --> A[Gemini answer<br/>JSON + citations]
+  A --> V{Citation check<br/>no model}
+  V -->|supported| Y[Answer shown]
+  V -->|unsupported| N[Shown as abstention<br/>with reasons]
+  S --> D[Next.js dashboard]
+  V --> D
+```
+
+- **Retrieval** (`src/retrieval/`): BM25 as the non-AI baseline; Gemini embeddings with an on-disk vector cache, a rate limiter and retry after a 429; a hybrid by reciprocal rank fusion (worse than embeddings alone here, so not the default); and a deterministic product-name check that puts the named product's passages first.
+- **Evaluation** (`src/eval/`): Recall@1, Recall@5 and MRR, overall and per question style (literal or paraphrased), on a dev split and a held-out split that was run once.
+- **Run store and gate** (`src/gate/`): each run is appended to a local history with its config, commit, dataset fingerprint and metrics. A run can be saved as the baseline for its config in `baselines/` (committed). `npm run gate` compares a new run with it and exits 1 if any metric drops by more than the tolerance (0 by default). A run on a changed dataset is refused rather than compared. In CI, each gate step writes a table of metric, baseline and change to the job summary.
+- **Grounded answers** (`src/answer/`, `src/gemini/generate.ts`): Gemini answers from the retrieved passages only, as JSON with cited passage ids, or returns no answer. A hard daily request cap, counted on disk, and an answer cache keep it inside the free tier. The sample is prefix-stable, so it grows day by day through the cache, and a run stops cleanly at the cap or on HTTP 429, 500 or 503.
+- **Citation check** (`src/answer/verify.ts`): an answer is shown only if it cites something, every cited passage was retrieved, every cited passage is about the product the question names, and every number in the answer appears in the cited text. Otherwise it is shown as an abstention, with the reasons. The CLI also breaks each supported answer three ways and checks that the verifier rejects every copy.
+- **Dashboard** (`dashboard/`, Next.js 16, React server components): baselines, a score trend per run config, the run history with pass or regression status, and every answer report with its verdicts. It is read-only and reads the files at request time. A test keeps its status rule in agreement with the CI gate.
+- **CI** (`.github/workflows/quality-gate.yml`): on every push and pull request it runs the typecheck, the unit tests and `npm audit`, then the BM25 gate on both dev sets and on BM25 with the product check, then audits, type-checks and builds the dashboard. Actions are pinned to commit SHAs. BM25 needs no API key, so CI uses no secrets.
+
+## Design decisions
+
+- **The AI has to earn its place.** Every AI step is compared with a simpler baseline first: embeddings against BM25. The hybrid was dropped as the default when it lost.
+- **No model grades itself.** The answer check is deterministic, so it is cheap, repeatable and testable, and it is tested on broken answers. The trade-off: it fits short factual answers (numbers, named products). An LLM judge would cover open-ended answers that this check cannot.
+- **Synthetic data only.** The Gemini free tier may use submitted text to improve Google's products, so the corpus is generated in the repo with exact ground truth. A synthetic set can favour the method its author designs for, so it includes paraphrases and look-alike products, and the held-out split was run once.
+- **Free tier, bounded.** Embeddings and answers are cached, requests are capped per Pacific day, and nothing retries automatically in a way that would spend quota.
+- **CI gates what it can run without secrets.** Gemini results stay local; CI gates the BM25 configs.
+
+## Run it
+
+Needs Node 22. Gemini runs need `GEMINI_API_KEY` in a git-ignored `.env`.
 
 ```
 npm install
-npm test            # unit tests, no network
+npm test                                         # unit tests, no network
 npm run typecheck
-npm run corpus      # writes the synthetic corpus to data/corpus/
-npm run eval        # scores BM25 on the dev split
-npm run eval -- --retriever gemini   # embeddings; first run sends about 180 items to the free API
-npm run eval -- --retriever gemini --corpus v2   # harder set; first run sends about 360 items
-npm run eval -- --retriever hybrid --corpus v2   # BM25 + embeddings fused; reuses cached vectors
-npm run eval -- --corpus v2 --save-baseline     # make this run the baseline for its config
-npm run eval -- --corpus v2 --gate              # compare with the baseline; exit 1 on any drop
-npm run gate -- --corpus v2                     # same check; this is what CI runs
-npm run eval -- --retriever gemini+product --corpus v2   # embeddings plus the product-name check
-npm run answer      # grounded answers for 6 dev questions; up to 6 Gemini requests, cached after
-npm run answer -- --drop-gold   # hide the gold passage: the right outcome is to abstain
-npm run eval -- --corpus v2 --gate --tolerance 0.02   # allow drops of up to 0.02
-npm run probe       # needs GEMINI_API_KEY in .env; makes up to 60 calls
+npm run eval                                     # BM25 on the v1 dev split
+npm run eval -- --retriever gemini --corpus v2   # embeddings; the first run embeds about 360 items
+npm run eval -- --retriever gemini+product --corpus v2
+npm run eval -- --corpus v2 --save-baseline      # save this run as the baseline for its config
+npm run gate -- --corpus v2                      # what CI runs: exit 1 on any drop
+npm run eval -- --corpus v2 --gate --tolerance 0.02
+npm run answer -- --limit 60                     # grounded answers; about 15 new a day, cached after
+npm run answer -- --drop-gold                    # hide the gold passage: the right outcome is to abstain
+npm run probe                                    # measure free-tier limits; up to 60 calls
 ```
 
 Dashboard (reads `baselines/`, `data/runs/` and `data/answers/` from the repository root):
@@ -57,7 +81,7 @@ Dashboard (reads `baselines/`, `data/runs/` and `data/answers/` from the reposit
 ```
 cd dashboard
 npm install
-npm run dev         # http://localhost:3000
+npm run dev                                      # http://localhost:3000
 ```
 
 ![Dashboard: baselines and run history](docs/screenshots/dashboard.png)
@@ -66,14 +90,17 @@ npm run dev         # http://localhost:3000
 
 ![Dashboard: grounded answers with citation-check verdicts](docs/screenshots/answers.png)
 
-The plan and the evidence so far are in:
+## Compared with existing tools
 
-- [PRODUCT_RESEARCH.md](PRODUCT_RESEARCH.md): ideas considered, verified facts, competitors, risks, and what is still unverified
-- [VALIDATION_PLAN.md](VALIDATION_PLAN.md): the gates the project must pass before it is built
-- [PLAN.md](PLAN.md): phases, draft success criteria and next actions
+promptfoo, Ragas and DeepEval already score retrieval context and answer faithfulness, and promptfoo and DeepEval run in CI, so running evals in CI is not new. Going by their documentation, the differences here are a deterministic citation check instead of an LLM judge, and a gate against a committed, dataset-fingerprinted baseline, which promptfoo's CI docs leave to custom scripting. Details, and what was not checked: [PRODUCT_RESEARCH.md](PRODUCT_RESEARCH.md).
 
-Existing tools such as promptfoo and Ragas already cover parts of this space, so any differentiation here is a hypothesis until it is tested.
+## Limits and work not done
 
-## Planned stack
+- Synthetic data only; nothing here has been run on a real document set.
+- The citation check passes a number that is in a cited passage but answers a different question. Matching the question's topic to the passage is not built.
+- Gemini baselines are not committed or gated in CI, because CI has no API key.
+- The free-tier daily embedding limit is not measured; the per-minute limit is (100 requests).
+- There is no API server, job queue or vector database. The service layer in the original plan was not needed for the gate and was not built.
+- Demand has not been validated, and user interviews were waived.
 
-TypeScript throughout: Node, a small API and job queue, a vector store, a Next.js dashboard, Vitest and GitHub Actions. Embeddings and answers use the free tier of the Gemini API, so only public or synthetic text is ever indexed.
+Plan and gates: [PLAN.md](PLAN.md), [VALIDATION_PLAN.md](VALIDATION_PLAN.md).

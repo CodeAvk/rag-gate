@@ -1,6 +1,6 @@
 # PLAN.md
 
-Status as of 2026-11-17: Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs with a score trend, answers) done; the answer sample now grows day by day (15 of 60 answered on 2026-11-17).
+Status as of 2026-11-17 (README rewritten as the project summary): Gate 0 nearly met (daily embedding limit unmeasured); **Gate 1 passed** on held-out (`docs/GATE1_RESULTS.md`); Gate 2 waived. Gate 3 started 2026-11-10: run store, regression gate and GitHub Actions CI done; product-name check and CI results table done; grounded answers, the citation check and both dashboard pages (runs with a score trend, answers) done; the answer sample now grows day by day (15 of 60 answered on 2026-11-17).
 
 ## Phases
 1. **Research**: in progress. See `PRODUCT_RESEARCH.md`.
@@ -16,8 +16,8 @@ Status as of 2026-11-17: Gate 0 nearly met (daily embedding limit unmeasured); *
 - Every cited passage in a reported answer is checked, and unsupported answers are reported as abstentions.
 - Tests cover the metrics, the support check and the regression gate.
 
-## Planned stack (TypeScript throughout, subject to Gate 0)
-Node 22, Fastify or Hono, BullMQ with Redis for jobs, Postgres with pgvector or Qdrant for vectors, Next.js dashboard, Vitest, GitHub Actions, Docker Compose.
+## Stack
+Built: Node 22, TypeScript, Vitest, Next.js 16 dashboard, GitHub Actions. Planned but not built, because the gate did not need them: an API server (Fastify or Hono), a job queue (BullMQ with Redis), a vector database (pgvector or Qdrant) and Docker Compose.
 
 ## Next actions
 - [x] Measure the free-tier embedding limits with a small script (2026-11-03: 100 requests per minute).
