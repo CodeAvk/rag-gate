@@ -14,7 +14,8 @@
     "corpus": "tsx src/corpus/synthetic.ts",
     "eval": "tsx src/eval/run.ts",
     "gate": "tsx src/eval/run.ts --gate",
-    "answer": "tsx src/answer/run.ts"
+    "answer": "tsx src/answer/run.ts",
+    "probe:batch": "tsx src/gate0/batch-count.ts"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

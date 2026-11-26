@@ -10,7 +10,7 @@ Measured 2026-11-03 with `npm run probe` (`src/gate0/probe.ts`). The probe sends
 | Default vector size | 3072 for both models. | Measured |
 | Latency of one call | About 1.0 to 1.4 s (40 back-to-back calls took 37.8 s, about 0.95 s each). | Measured, one run |
 | Per-minute limit | **100 embed requests per minute** on the free tier. Google's 429 named the metric `embed_content_free_tier_requests`, `limit: 100`, model `gemini-embedding-1.0`, "requests per minute". | Measured (quoted from the API) |
-| Does batching save quota? | **Apparently not.** A single batch of 100 texts, sent right after one single call, was refused with that per-minute limit, so each text in a batch seems to count as one request. | Inferred from one refusal; not yet confirmed with a smaller batch |
+| Does batching save quota? | **No: each text in a batch counts as one request.** On 2026-11-26, `npm run probe:batch` waited 65 s, then sent batches of 10 texts back to back: batches 1 to 10 (100 texts) were accepted in about 20 s, and batch 11 was refused with the same `embed_content_free_tier_requests`, `limit: 100` per-minute message. A batch saves HTTP calls, not quota. | Measured (one run, 11 calls) |
 | Daily limit | **Unknown.** It was not reached in 43 calls and is not listed on Google's docs pages. | Not measured |
 | Limit for `gemini-embedding-2` | Unknown; only one call was made to it. | Not measured |
 
@@ -33,5 +33,5 @@ Measured 2026-11-03 with `npm run probe` (`src/gate0/probe.ts`). The probe sends
 **Gate 0 is not passed yet.**
 
 ## Next
-1. Confirm batch counting with a batch of 10, and measure the daily limit only if a design decision depends on it.
+1. ~~Confirm batch counting with a batch of 10~~ Done 2026-11-26: each text counts (`src/gate0/batch-count.ts`). Measure the daily limit only if a design decision depends on it.
 2. ~~Choose the corpus~~ Done: synthetic generator with known facts (`docs/CORPUS.md`).
