@@ -3,7 +3,8 @@
  *
  * Vectors are cached on disk by content hash, one file per model, size and task type, so a passage
  * or question is sent to the API once and every later run is free. A limiter keeps item requests
- * under the measured free-tier limit (100 per minute; batch items count individually).
+ * under the measured free-tier limit (100 per minute; batch items count individually, measured
+ * 2026-11-26 in docs/GATE0_RESULTS.md).
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

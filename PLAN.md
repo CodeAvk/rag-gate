@@ -21,7 +21,7 @@ Built: Node 22, TypeScript, Vitest, Next.js 16 dashboard, GitHub Actions. Planne
 
 ## Next actions
 - [x] Measure the free-tier embedding limits with a small script (2026-11-03: 100 requests per minute).
-- [ ] Confirm whether batch items count individually; measure the daily limit only if the design needs it.
+- [x] Confirm whether batch items count individually (2026-11-26, `npm run probe:batch`): yes, 100 texts per minute whatever the batch size; batch 11 of 10 texts was refused. The daily limit stays unmeasured until the design needs it.
 - [x] Synthetic corpus generator with exact ground truth (2026-11-04).
 - [x] BM25 baseline and retrieval metrics on the dev set (2026-11-05: paraphrase R@5 0.643, literal 1.000).
 - [x] Embedding retriever with a cached index, on the dev set (2026-11-05: 1.000 on every metric; set too easy).
